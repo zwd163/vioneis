@@ -228,13 +228,13 @@ module.exports = function (/* ctx */) {
       builder: {
         // https://www.electron.build/configuration/configuration
 
-        appId: 'com.electron.greaterwms',
-        productName: 'GreaterWMS',
-        copyright: '2022SR0153577',
+        appId: 'vionstrategies.com',
+        productName: 'vioneis',
+        copyright: 'xx',
         publish: [
           {
             provider: 'generic',
-            url: 'https://production.56yhz.com/media/'
+            url: 'https://vionstrategies.com/'
           }
         ],
         mac: {
