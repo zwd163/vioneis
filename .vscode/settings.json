@@ -19,5 +19,8 @@
             "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
             "args": ["-NoExit", "-Command", "& .\\venv\\Scripts\\Activate.ps1"]
         }
+    },
+    "marscode.codeCompletionPro": {
+        "enableCodeCompletionPro": true
     }
 }

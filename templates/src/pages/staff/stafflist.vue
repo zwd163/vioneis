@@ -325,13 +325,16 @@ export default {
       }
       this.getList()
     },
-    getSearchList () {
-      var _this = this
-      _this.filter = _this.filter.replace(/\s+/g, '')
-      _this.current = 1
-      _this.paginationIpt = 1
-      getauth(_this.pathname + '?staff_name__icontains=' + _this.filter + '&page=' + '' + _this.current, {})
-        .then(res => {
+
+    getSearchList (url = 'staff/') {
+    var _this = this
+    _this.filter = _this.filter.replace(/\s+/g, '')
+    _this.current = 1
+    _this.paginationIpt = 1
+    // Explanation: Check if the staff data is found.
+    getauth(url + '&staff_name__icontains=' + _this.filter + '&page=' + '' + _this.current, {})
+      .then(res => {
+        if(res.count > 0){
           _this.table_list = res.results
           _this.total = res.count
           if (res.count === 0) {
@@ -366,15 +369,29 @@ export default {
           }
           _this.pathname_previous = res.previous
           _this.pathname_next = res.next
-        })
-        .catch(err => {
+        } else {
+          _this.table_list = []
+          _this.total = 0
+          _this.max = 0
           _this.$q.notify({
-            message: err.detail,
+            message: 'the user name does not exist',
             icon: 'close',
             color: 'negative'
           })
+        }
+        
+      })
+      .catch(err => {
+        _this.$q.notify({
+          message: err.detail,
+          icon: 'close',
+          color: 'negative'
         })
-    },
+      })
+  },
+
+
+
     getListPrevious () {
       var _this = this
       getauth(_this.pathname_previous, {})
@@ -694,6 +711,13 @@ export default {
     } else {
       _this.height = _this.$q.screen.height - 290 + '' + 'px'
     }
+    // Explanation: Check if the staff_type is Admin.
+    if(LocalStorage.getItem('staff_type') === 'Admin'){
+      _this.getData()
+    } else {
+      _this.getData('staff/?staff_name=' + LocalStorage.getItem('login_name'))
+    }
+    
     if (LocalStorage.getItem('lang') === 'zh-hans') {
       _this.staff_type_list = ['经理', '主管', '收货组', '发货组', '库存控制', '客户', '供应商']
     } else {

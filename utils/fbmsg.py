@@ -1,6 +1,6 @@
 class FBMsg(object):
     def ret():
-        ret = {"code": "200", "msg": "Success Create", "data": None}
+        ret = {"code": "200", "msg": "Success", "data": None}
         return ret
     def err_contact_name():
         err_contact_name = {"code": "1001", "msg": "称谓不能为空", "data": None}
@@ -21,7 +21,7 @@ class FBMsg(object):
         err_order_fail = {"code": "1006", "msg": "订单支付失败", "data": None}
         return err_order_fail
     def err_ret():
-        err_ret = {"code": "1011", "msg": "User Name Or Password Error", "data": None}
+        err_ret = {"code": "400", "msg": "Error", "data": None}
         return err_ret
     def err_data():
         err_data = {"code": "1012", "msg": "数据不可用", "data": None}

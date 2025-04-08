@@ -175,7 +175,9 @@ export default defineComponent({
     },
     staffLogin () {
       var _this = this
-      if (_this.openid.length === 0) {
+      if (_this.login_mode === 0) {
+        // Skip openid check for user login
+      } else if (_this.openid.length === 0) {
         _this.$q.notify({
           type: 'negative',
           message: _this.$t('notice.mobile_userlogin.notice5')

@@ -1,14 +1,19 @@
 from django.db import models
 
 class ListModel(models.Model):
-    staff_name = models.CharField(max_length=255, verbose_name="Staff Name")
+    staff_name = models.CharField(max_length=255, unique=True, verbose_name="Staff Name/Username") # Make username unique
+    # TODO: Consider making staff_name unique=True if it serves as the username
+    real_name = models.CharField(max_length=100, blank=True, null=True, verbose_name="Real Name") # Optional
     staff_type = models.CharField(max_length=255, verbose_name="Staff Type")
-    check_code = models.IntegerField(default=8888, verbose_name="Check Code")
-    openid = models.CharField(max_length=255, verbose_name="Openid")
+    email = models.EmailField(unique=True, blank=True, null=True, verbose_name="Email") # Optional but unique
+    phone_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="Phone Number") # Optional for now
+    password = models.CharField(max_length=128, verbose_name="Password") # Store hashed password, handled by Django auth or manually
+    openid = models.CharField(max_length=255, verbose_name="Openid", null=True, blank=True) # Keep for now, make optional
     is_delete = models.BooleanField(default=False, verbose_name='Delete Label')
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="Create Time")
     update_time = models.DateTimeField(auto_now=True, blank=True, null=True, verbose_name="Update Time")
-    error_check_code_counter = models.IntegerField(default=0,verbose_name='check_code error counter')
+    
+
     is_lock = models.BooleanField(default=False,verbose_name='Whether the lock')
     class Meta:
         db_table = 'staff'
@@ -18,7 +23,7 @@ class ListModel(models.Model):
 
 class TypeListModel(models.Model):
     staff_type = models.CharField(max_length=255, verbose_name="Staff Type")
-    openid = models.CharField(max_length=255, verbose_name="Openid")
+    openid = models.CharField(max_length=255, verbose_name="Openid", null=True, blank=True) # Keep for now, make optional
     creater = models.CharField(max_length=255, verbose_name="Creater")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="Create Time")
     update_time = models.DateTimeField(auto_now=True, blank=True, null=True, verbose_name="Update Time")

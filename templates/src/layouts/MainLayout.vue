@@ -473,6 +473,7 @@
               v-model="adminlogin.name"
               autofocus
               @keyup.enter="adminLogin()"
+              :rules="[val => !!val || $t('validation.required')]"
             />
             <q-input
               dense
@@ -483,6 +484,7 @@
               v-model="adminlogin.password"
               @keyup.enter="adminLogin()"
               style="margin-top: 5px"
+              :rules="[val => !!val || $t('validation.required')]"
             >
               <template v-slot:append>
                 <q-icon
@@ -498,33 +500,31 @@
               dense
               outlined
               square
-              :label="$t('index.your_openid')"
-              v-model="openid"
-              disable
-              readonly
-              @keyup.enter="Login()"
-            />
-            <q-input
-              dense
-              outlined
-              square
               :label="$t('index.staff_name')"
-              v-model="login_name"
+              v-model="loginform.name"
               autofocus
               @keyup.enter="Login()"
-              style="margin-top: 5px"
+              bottom-slots
             />
             <q-input
-              dense
-              outlined
-              square
-              type="number"
-              :label="$t('staff.check_code')"
-              v-model.number="check_code"
-              autofocus
-              @keyup.enter="Login()"
-              style="margin-top: 5px"
-            />
+            dense
+            outlined
+            square
+            :label="$t('index.password')"
+            :type="isPwd ? 'password' : 'text'"
+            v-model="loginform.password"
+            @keyup.enter="Login()"
+            style="margin-top: 5px"
+            bottom-slots
+          >
+              <template v-slot:append>
+                <q-icon
+                  :name="isPwd ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="isPwd = !isPwd"
+                />
+              </template>
+            </q-input>
           </template>
         </q-card-section>
         <q-card-actions align="left" class="text-primary">
@@ -694,6 +694,10 @@ export default {
         password1: '',
         password2: ''
       },
+      loginform: {
+        name: '',
+        password: ''
+      },
       needLogin: '',
       activeTab: ''
     }
@@ -718,130 +722,160 @@ export default {
     apiLink () {
       openURL(baseurl + '/api/docs/')
     },
-    Login () {
-      var _this = this
-      if (_this.login_name === '') {
+
+  
+Login () {
+  var _this = this
+  if (!_this.loginform.name || _this.loginform.name.trim() === '') {
+    _this.$q.notify({
+      message: _this.$t('validation.required'),
+      color: 'negative',
+      icon: 'close',
+      timeout: 2000
+    })
+    return
+  }
+  if (!_this.loginform.password || _this.loginform.password.trim() === '') {
+    _this.$q.notify({
+      message: _this.$t('validation.required'),
+      icon: 'close',
+      color: 'negative',
+      timeout: 2000
+    })
+    return
+  }
+
+  SessionStorage.set('axios_check', 'false')
+  post('/login/', {name: _this.loginform.name, password: _this.loginform.password}) //  Changed URL to /login/
+    .then((res) => { 
+      // Explanation: Check the response code.
+      if (res.code === '200') {
+        _this.authin = '1'
+        _this.login = false
+        _this.login_id = res.data.user_id
+        LocalStorage.set('auth', '1')
+        LocalStorage.set('login_name', res.data.name) // CHANGE: Changed to res.data.name
+        LocalStorage.set('login_id', res.data.user_id)
+        LocalStorage.set('login_mode', 'user')
         _this.$q.notify({
-          message: 'Please enter the login name',
-          color: 'negative',
-          icon: 'close'
+          message: _this.$t('index.login_success'),
+          icon: 'check',
+          color: 'green',
+          timeout: 2000
         })
+        localStorage.removeItem('menulink')
+        _this.link = ''
+        _this.$router.push({ name: 'web_index' })
+        window.setTimeout(() => {
+          location.reload()
+        }, 1)
       } else {
-        if (_this.openid === '') {
-          _this.$q.notify({
-            message: 'Please Enter The Openid',
-            icon: 'close',
-            color: 'negative'
-          })
-        } else {
-          if (_this.check_code === '') {
-            _this.$q.notify({
-              message: 'Please Enter The Check Code',
-              icon: 'close',
-              color: 'negative'
-            })
-          } else {
-            LocalStorage.set('openid', _this.openid)
-            SessionStorage.set('axios_check', 'false')
-            getauth(
-              'staff/?staff_name=' +
-                _this.login_name +
-                '&check_code=' +
-                _this.check_code
-            )
-              .then((res) => {
-                if (res.count === 1) {
-                  _this.authin = '1'
-                  _this.login = false
-                  _this.login_id = res.results[0].id
-                  LocalStorage.set('auth', '1')
-                  LocalStorage.set('login_name', _this.login_name)
-                  LocalStorage.set('login_id', res.results[0].id)
-                  LocalStorage.set('login_mode', 'user')
-                  _this.$q.notify({
-                    message: 'Success Login',
-                    icon: 'check',
-                    color: 'green'
-                  })
-                  localStorage.removeItem('menulink')
-                  _this.link = ''
-                  _this.$router.push({ name: 'web_index' })
-                  window.setTimeout(() => {
-                    location.reload()
-                  }, 1)
-                }
-              })
-              .catch((err) => {
-                _this.$q.notify({
-                  message: err.detail,
-                  icon: 'close',
-                  color: 'negative'
-                })
-              })
-          }
-        }
-      }
+        _this.$q.notify({
+          message: res.msg || _this.$t('index.login_failed'),
+          icon: 'close',
+          color: 'negative',
+          timeout: 2000
+        })
+      } 
+    })
+    .catch((err) => {
+      _this.$q.notify({
+        message: err.detail || _this.$t('index.login_error'),
+        icon: 'close',
+        color: 'negative',
+        timeout: 2000
+      })
+    })
     },
+
+    // MainLayout.vue
     adminLogin () {
       var _this = this
       if (!_this.adminlogin.name) {
         _this.$q.notify({
-          message: 'Please enter the admin name',
+          message: _this.$t('validation.required', { field: _this.$t('index.admin_name') }),
           color: 'negative',
           icon: 'close'
         })
-      } else {
-        if (!_this.adminlogin.password) {
+        return
+      }
+      if (!_this.adminlogin.password) {
+        _this.$q.notify({
+          message: _this.$t('validation.required', { field: _this.$t('index.password') }),
+          icon: 'close',
+          color: 'negative'
+        })
+        return
+      }
+      SessionStorage.set('axios_check', 'false')
+      post('login/', _this.adminlogin)
+        .then((res) => { 
+          // Explanation: Check the response code.
+          if (res.code === '200') {
+            _this.authin = '1'
+            _this.login = false
+            _this.admin = false
+            _this.openid = res.data.openid
+            _this.login_name = res.data.name
+            _this.login_id = res.data.user_id
+            LocalStorage.set('auth', '1')
+            LocalStorage.set('openid', res.data.openid)
+            LocalStorage.set('login_name', _this.login_name)
+            LocalStorage.set('login_id', _this.login_id)
+            LocalStorage.set('login_mode', 'admin')
+            _this.$q.notify({
+              message: _this.$t('index.login_success'),
+              icon: 'check',
+              color: 'green'
+            }) 
+            // Explanation: Call the staffType() method.
+            _this.staffType() 
+            localStorage.removeItem('menulink')
+            _this.link = ''
+            _this.$router.push({ name: 'web_index' })
+            window.setTimeout(() => {
+              location.reload()
+            }, 1)
+          } else {
+            _this.$q.notify({
+              message: res.msg || _this.$t('index.login_failed'),
+              icon: 'close',
+              color: 'negative'
+            })
+          } 
+        })
+        .catch((err) => {
           _this.$q.notify({
-            message: 'Please enter the admin password',
+            message: err.detail || _this.$t('index.login_error'),
             icon: 'close',
             color: 'negative'
           })
-        } else {
-          SessionStorage.set('axios_check', 'false')
-          post('login/', _this.adminlogin)
-            .then((res) => {
-              if (res.code === '200') {
-                _this.authin = '1'
-                _this.login = false
-                _this.admin = false
-                _this.openid = res.data.openid
-                _this.login_name = res.data.name
-                _this.login_id = res.data.user_id
-                LocalStorage.set('auth', '1')
-                LocalStorage.set('openid', res.data.openid)
-                LocalStorage.set('login_name', _this.login_name)
-                LocalStorage.set('login_id', _this.login_id)
-                LocalStorage.set('login_mode', 'admin')
-                _this.$q.notify({
-                  message: 'Success Login',
-                  icon: 'check',
-                  color: 'green'
-                })
-                localStorage.removeItem('menulink')
-                _this.link = ''
-                _this.$router.push({ name: 'web_index' })
-                window.setTimeout(() => {
-                  location.reload()
-                }, 1)
-              } else {
-                _this.$q.notify({
-                  message: res.msg,
-                  icon: 'close',
-                  color: 'negative'
-                })
-              }
-            })
-            .catch((err) => {
-              _this.$q.notify({
-                message: err.detail,
-                icon: 'close',
-                color: 'negative'
-              })
-            })
-        }
-      }
+        })
     },
+    // MainLayout.vue
+    staffType () {
+      var _this = this 
+      // Explanation: Check if the login_mode is admin.
+      if(LocalStorage.getItem('login_mode') === 'admin'){
+        LocalStorage.set('staff_type', 'Admin')
+        return
+      } 
+      getauth('staff/?staff_name=' + _this.login_name).then((res) => {
+ 
+        // Explanation: Check if the staff data is found.
+        if(res.count > 0){
+          LocalStorage.set('staff_type', res.results[0].staff_type)
+        } else {
+          LocalStorage.set('staff_type', 'Admin')
+        } 
+      })
+    },
+
+
+
+
+
+
     Logout () {
       var _this = this
       _this.authin = '0'
@@ -911,12 +945,26 @@ export default {
           })
         })
     },
+
+
+    // MainLayout.vue
     staffType () {
-      var _this = this
-      getauth('staff/?staff_name=' + _this.login_name).then((res) => {
-        LocalStorage.set('staff_type', res.results[0].staff_type)
+      var _this = this 
+      // Explanation: Check if the login_mode is admin.
+      if(LocalStorage.getItem('login_mode') === 'admin'){
+        LocalStorage.set('staff_type', 'Admin')
+        return
+      } 
+      getauth('staff/?staff_name=' + _this.login_name).then((res) => { 
+        // Explanation: Check if the staff data is found.
+        if(res.count > 0){
+          LocalStorage.set('staff_type', res.results[0].staff_type)
+        } else {
+          LocalStorage.set('staff_type', 'Admin')
+        } 
       })
     },
+
     warehouseOptionsGet () {
       var _this = this
       get('warehouse/multiple/?max_page=30')
