@@ -48,6 +48,20 @@ export default {
     download: '下载',
     updatetitle: '升级就绪',
     updatedesc: '版本已经升级准备就绪',
+    forgot_password: '忘记密码',
+    reset_password: '重置密码',
+    new_password: '新密码',
+    email: '电子邮箱',
+    sending_reset_email: '正在发送重置密码邮件...',
+    reset_email_sent: '重置密码邮件已发送',
+    reset_email_failed: '发送重置邮件失败',
+    invalid_token: '无效或已过期的令牌',
+    password_reset_success: '密码重置成功',
+    password_reset_failed: '密码重置失败',
+    validation: {
+      required: '此字段为必填项',
+      passwords_must_match: '两次输入的密码必须相同'
+    },
     update: '马上更新',
     chart: '报表',
     current_user: '当前用户'

@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth.hashers import make_password, check_password
+# Removed unused imports for password-related functionality
 from .models import ListModel, TypeListModel
 from . import serializers
 from utils.page import MyPageNumberPagination
@@ -20,32 +20,31 @@ import random
 class RegisterView(APIView):
     def post(self, request):
         data = request.data
-        
+
         # 验证必填字段
-        required_fields = ['staff_name', 'email', 'password', 'staff_type']
+        required_fields = ['staff_name', 'email', 'staff_type']
         for field in required_fields:
             if field not in data:
                 return Response({'error': f'{field} is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # 检查用户名和邮箱是否已存在
         if ListModel.objects.filter(staff_name=data['staff_name']).exists():
             return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         if ListModel.objects.filter(email=data['email']).exists():
             return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # 创建用户
         user = ListModel(
             staff_name=data['staff_name'],
             email=data['email'],
-            password=make_password(data['password']),
             staff_type=data['staff_type'],
             real_name=data.get('real_name', ''),
             phone_number=data.get('phone_number', ''),
             check_code=random.randint(1000, 9999)
         )
         user.save()
-        
+
         return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
 
 
@@ -68,7 +67,12 @@ class APIViewSet(viewsets.ModelViewSet):
 
         update:
             Update a data(put:update)
+
+        reset_password:
+            Reset user password(post)
     """
+
+    # reset_password action removed as password field is no longer used
     pagination_class = MyPageNumberPagination
     filter_backends = [DjangoFilterBackend, OrderingFilter, ]
     ordering_fields = ['id', "create_time", "update_time", ]
@@ -78,7 +82,7 @@ class APIViewSet(viewsets.ModelViewSet):
         staff_name = request.GET.get('staff_name')
         if not staff_name:
             return super().list(request, *args, **kwargs)
-        
+
         staff_name_obj = ListModel.objects.filter(openid=self.request.auth.openid, staff_name=staff_name,
                                                 is_delete=False).first()
         if staff_name_obj is None:

@@ -14,7 +14,8 @@ class Authtication(object):
                 else:
                     raise APIException({"detail": "User Does Not Exists"})
             else:
-                raise APIException({"detail": "Please Add Token To Your Request Headers"})
+                # 不抛出异常，而是返回False，让前端处理
+                return (False, None)
 
     def authenticate_header(self, request):
         pass

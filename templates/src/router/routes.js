@@ -3,6 +3,11 @@ const routes = [{
   component: () => import('layouts/MainLayout.vue'),
   children: [
     {
+      path: 'reset-password',
+      name: 'reset_password',
+      component: () => import('pages/ResetPassword.vue')
+    },
+    {
       path: '',
       name: 'web_index',
       component: () => import('pages/Index.vue')

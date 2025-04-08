@@ -21,7 +21,7 @@
           }}</q-toolbar-title>
         </transition>
         <q-space />
-        
+
         <transition appear enter-active-class="animated zoomIn">
           <q-btn
             icon="api"
@@ -433,24 +433,26 @@
           class="bg-light-blue-10 text-white rounded-borders"
           style="height: 50px"
         >
-          <q-tabs v-model="activeTab" class="tabs">
-            <q-tab name="user" @click="admin = false">
+          <q-tabs
+            v-model="activeTab"
+            class="tabs"
+            active-color="white"
+            indicator-color="white"
+            :breakpoint="0"
+          >
+            <q-tab
+              name="user"
+              @click="admin = false"
+              :class="{'active-tab': !admin, 'inactive-tab': admin}"
+            >
               {{ $t("index.user_login") }}
-              <q-tooltip
-                content-class="bg-amber text-black shadow-4"
-                :offset="[5, 5]"
-                content-style="font-size: 12px"
-                >{{ $t("index.user_login") }}</q-tooltip
-              >
             </q-tab>
-            <q-tab name="admin" @click="admin = true">
+            <q-tab
+              name="admin"
+              @click="admin = true"
+              :class="{'active-tab': admin, 'inactive-tab': !admin}"
+            >
               {{ $t("index.admin_login") }}
-              <q-tooltip
-                content-class="bg-amber text-black shadow-4"
-                :offset="[5, 5]"
-                content-style="font-size: 12px"
-                >{{ $t("index.admin_login") }}</q-tooltip
-              >
             </q-tab>
           </q-tabs>
           <q-space />
@@ -548,7 +550,78 @@
             >
               {{ $t("index.register_tip") }}
             </q-btn>
+            <!-- Explanation: Add the "Forgot Password" link -->
+            <q-btn
+              flat
+              class="text-teal-4 q-mt-sm"
+              @click="forgotPassword = true; login = false"
+            >
+              {{ $t("index.forgot_password") }}
+            </q-btn>
           </div>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+    <q-dialog v-model="forgotPassword">
+      <q-card style="min-width: 350px">
+        <q-bar
+          class="bg-light-blue-10 text-white rounded-borders"
+          style="height: 50px"
+        >
+          <div>{{ $t("index.forgot_password") }}</div>
+          <q-space></q-space>
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip
+              content-class="bg-amber text-black shadow-4"
+              :offset="[20, 20]"
+              content-style="font-size: 12px"
+              >{{ $t("index.close") }}</q-tooltip
+            >
+          </q-btn>
+        </q-bar>
+        <q-card-section class="q-pt-md">
+          <!-- 错误消息区域 -->
+          <div v-if="forgotPasswordError" class="text-negative q-mb-md">
+            <q-icon name="error" />
+            {{ forgotPasswordError }}
+          </div>
+
+          <q-input
+            dense
+            outlined
+            square
+            :label="$t('index.staff_name')"
+            v-model="forgotPasswordForm.name"
+            autofocus
+            bottom-slots
+          />
+          <q-input
+            dense
+            outlined
+            square
+            :label="$t('index.email')"
+            v-model="forgotPasswordForm.email"
+            style="margin-top: 5px"
+            bottom-slots
+          />
+        </q-card-section>
+        <q-card-actions align="right" class="text-primary q-mx-sm">
+          <q-btn
+            class="full-width"
+            color="primary"
+            :label="$t('index.reset_password')"
+            @click="ResetPassword()"
+            :loading="isLoading"
+          />
+        </q-card-actions>
+        <q-card-actions align="center" style="margin-top: -8px">
+          <q-btn
+            class="text-teal-4"
+            flat
+            :label="$t('index.return_to_login')"
+            @click="login = true; forgotPassword = false"
+            :disable="isLoading"
+          ></q-btn>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -643,7 +716,7 @@
   </q-layout>
 </template>
 <script>
-import { get, getauth, post, baseurl } from 'boot/axios_request'
+import { get, getauth, post, postauth, baseurl } from 'boot/axios_request'
 import { LocalStorage, SessionStorage, openURL } from 'quasar'
 import Bus from 'boot/bus.js'
 
@@ -698,6 +771,14 @@ export default {
         name: '',
         password: ''
       },
+      // Explanation: Add the forgotPassword data property.
+      forgotPassword: false,
+      forgotPasswordForm: {
+        name: '',
+        email: ''
+      },
+      forgotPasswordError: '',
+      isLoading: false,
       needLogin: '',
       activeTab: ''
     }
@@ -723,9 +804,10 @@ export default {
       openURL(baseurl + '/api/docs/')
     },
 
-  
+
 Login () {
   var _this = this
+  console.log('[DEBUG] Login method called')
   if (!_this.loginform.name || _this.loginform.name.trim() === '') {
     _this.$q.notify({
       message: _this.$t('validation.required'),
@@ -744,12 +826,16 @@ Login () {
     })
     return
   }
+  // 清除所有标志，确保登录过程不受影响
+  SessionStorage.remove('is_refreshing_token')
+  SessionStorage.remove('showing_login')
 
   SessionStorage.set('axios_check', 'false')
   post('/login/', {name: _this.loginform.name, password: _this.loginform.password}) //  Changed URL to /login/
-    .then((res) => { 
+    .then((res) => {
       // Explanation: Check the response code.
       if (res.code === '200') {
+        console.log('[DEBUG] Login successful, setting auth status')
         _this.authin = '1'
         _this.login = false
         _this.login_id = res.data.user_id
@@ -757,12 +843,22 @@ Login () {
         LocalStorage.set('login_name', res.data.name) // CHANGE: Changed to res.data.name
         LocalStorage.set('login_id', res.data.user_id)
         LocalStorage.set('login_mode', 'user')
+        // 设置 token
+        if (res.data.openid) {
+          console.log('[DEBUG] Setting openid from login response')
+          LocalStorage.set('openid', res.data.openid)
+        }
+        // 清除所有标志
+        SessionStorage.remove('is_refreshing_token')
+        SessionStorage.remove('showing_login')
         _this.$q.notify({
           message: _this.$t('index.login_success'),
           icon: 'check',
           color: 'green',
           timeout: 2000
         })
+        // Explanation: Call the staffType() method.
+        _this.staffType()
         localStorage.removeItem('menulink')
         _this.link = ''
         _this.$router.push({ name: 'web_index' })
@@ -776,7 +872,7 @@ Login () {
           color: 'negative',
           timeout: 2000
         })
-      } 
+      }
     })
     .catch((err) => {
       _this.$q.notify({
@@ -809,7 +905,7 @@ Login () {
       }
       SessionStorage.set('axios_check', 'false')
       post('login/', _this.adminlogin)
-        .then((res) => { 
+        .then((res) => {
           // Explanation: Check the response code.
           if (res.code === '200') {
             _this.authin = '1'
@@ -827,9 +923,9 @@ Login () {
               message: _this.$t('index.login_success'),
               icon: 'check',
               color: 'green'
-            }) 
+            })
             // Explanation: Call the staffType() method.
-            _this.staffType() 
+            _this.staffType()
             localStorage.removeItem('menulink')
             _this.link = ''
             _this.$router.push({ name: 'web_index' })
@@ -842,7 +938,7 @@ Login () {
               icon: 'close',
               color: 'negative'
             })
-          } 
+          }
         })
         .catch((err) => {
           _this.$q.notify({
@@ -852,25 +948,156 @@ Login () {
           })
         })
     },
-    // MainLayout.vue
+
     staffType () {
-      var _this = this 
+      var _this = this
       // Explanation: Check if the login_mode is admin.
       if(LocalStorage.getItem('login_mode') === 'admin'){
         LocalStorage.set('staff_type', 'Admin')
         return
-      } 
+      }
       getauth('staff/?staff_name=' + _this.login_name).then((res) => {
- 
+
         // Explanation: Check if the staff data is found.
         if(res.count > 0){
           LocalStorage.set('staff_type', res.results[0].staff_type)
         } else {
           LocalStorage.set('staff_type', 'Admin')
-        } 
+        }
       })
     },
+    // Explanation: Add the ResetPassword() method.
+    ResetPassword () {
+      console.log('ResetPassword function called')
+      var _this = this
+      console.log('forgotPasswordForm:', _this.forgotPasswordForm)
 
+      // 清除之前的错误消息
+      _this.forgotPasswordError = ''
+
+      if (!_this.forgotPasswordForm.name || _this.forgotPasswordForm.name.trim() === '') {
+        console.log('Name is empty')
+        _this.forgotPasswordError = _this.$t('validation.required', { field: _this.$t('index.staff_name') })
+        _this.$q.notify({
+          message: _this.forgotPasswordError,
+          color: 'negative',
+          icon: 'close',
+          timeout: 5000 // 显示5秒
+        })
+        return
+      }
+      if (!_this.forgotPasswordForm.email || _this.forgotPasswordForm.email.trim() === '') {
+        console.log('Email is empty')
+        _this.forgotPasswordError = _this.$t('validation.required', { field: _this.$t('index.email') })
+        _this.$q.notify({
+          message: _this.forgotPasswordError,
+          icon: 'close',
+          color: 'negative',
+          timeout: 5000 // 显示5秒
+        })
+        return
+      }
+
+      // Send forgot password request to the backend
+      const data = {
+        username: _this.forgotPasswordForm.name,
+        email: _this.forgotPasswordForm.email
+      }
+
+      console.log('Sending data:', data)
+
+      // 设置加载状态
+      _this.isLoading = true
+
+      // 清除之前的错误消息
+      _this.forgotPasswordError = ''
+
+      // 使用XMLHttpRequest发送请求
+      try {
+        console.log('Using XMLHttpRequest to send request')
+
+        // 使用确定的URL
+        const apiUrl = 'http://127.0.0.1:8009/login/forgot-password/'
+
+        console.log('API URL:', apiUrl)
+        console.log('Sending data:', data)
+
+        // 显示一个加载指示器在按钮上
+        // 不需要额外的通知
+
+        // 使用XMLHttpRequest而不是fetch
+        var xhr = new XMLHttpRequest()
+        xhr.open('POST', apiUrl, true)
+        xhr.setRequestHeader('Content-Type', 'application/json')
+
+        xhr.onload = function() {
+          console.log('XHR response received:', xhr.status, xhr.responseText)
+          _this.isLoading = false
+
+          try {
+            var responseData = JSON.parse(xhr.responseText)
+            console.log('Response data:', responseData)
+
+            if (responseData.code === '200') {
+              _this.$q.notify({
+                message: _this.$t('index.reset_email_sent'),
+                icon: 'check',
+                color: 'green',
+                timeout: 10000 // 显示10秒
+              })
+              _this.forgotPasswordError = ''
+              _this.forgotPassword = false
+              _this.login = true
+            } else {
+              // 在表单上显示错误消息
+              _this.forgotPasswordError = responseData.msg || _this.$t('index.reset_email_failed')
+              _this.$q.notify({
+                message: _this.forgotPasswordError,
+                icon: 'close',
+                color: 'negative',
+                timeout: 10000 // 显示10秒
+              })
+            }
+          } catch (e) {
+            console.error('Error parsing response:', e)
+            _this.forgotPasswordError = 'Error parsing response: ' + e.message
+            _this.$q.notify({
+              message: _this.forgotPasswordError,
+              icon: 'close',
+              color: 'negative',
+              timeout: 10000 // 显示10秒
+            })
+          }
+        }
+
+        xhr.onerror = function() {
+          console.error('XHR error')
+          _this.isLoading = false
+          _this.forgotPasswordError = 'Network error'
+          _this.$q.notify({
+            message: _this.forgotPasswordError,
+            icon: 'close',
+            color: 'negative',
+            timeout: 10000 // 显示10秒
+          })
+        }
+
+        console.log('Sending data:', JSON.stringify(data))
+        xhr.send(JSON.stringify(data))
+      } catch (e) {
+        console.error('Exception in fetch:', e)
+        _this.isLoading = false
+
+        // 在表单上显示错误消息
+        _this.forgotPasswordError = 'Error: ' + e.message
+        _this.$q.notify({
+          message: _this.forgotPasswordError,
+          icon: 'close',
+          color: 'negative',
+          timeout: 10000 // 显示10秒
+        })
+      }
+    },
 
 
 
@@ -949,26 +1176,29 @@ Login () {
 
     // MainLayout.vue
     staffType () {
-      var _this = this 
+      var _this = this
       // Explanation: Check if the login_mode is admin.
       if(LocalStorage.getItem('login_mode') === 'admin'){
         LocalStorage.set('staff_type', 'Admin')
         return
-      } 
-      getauth('staff/?staff_name=' + _this.login_name).then((res) => { 
+      }
+      getauth('staff/?staff_name=' + _this.login_name).then((res) => {
         // Explanation: Check if the staff data is found.
         if(res.count > 0){
           LocalStorage.set('staff_type', res.results[0].staff_type)
         } else {
           LocalStorage.set('staff_type', 'Admin')
-        } 
+        }
       })
     },
 
     warehouseOptionsGet () {
       var _this = this
-      get('warehouse/multiple/?max_page=30')
-        .then((res) => {
+      // 使用axios直接发送请求，以便于调试
+      const axios = require('axios')
+      axios.get('http://127.0.0.1:8009/warehouse/multiple/?max_page=30')
+        .then((response) => {
+          const res = response.data
           if (res.count === 1) {
             _this.openid = res.results[0].openid
             _this.warehouse_name = res.results[0].warehouse_name
@@ -983,6 +1213,9 @@ Login () {
               })
             }
           }
+        })
+        .catch(error => {
+          console.error('Error fetching warehouse options:', error)
         })
         .catch((err) => {
           console.log(err)
@@ -1014,21 +1247,32 @@ Login () {
       }, 1)
     },
     isLoggedIn () {
-      if (this.$q.localStorage.getItem('openid')) {
-        this.login = true
-      } else {
-        this.register = true
-      }
+      // 始终显示登录对话框，而不是注册对话框
+      console.log('[DEBUG] isLoggedIn called, setting login=true')
+      console.log('[DEBUG] Current auth status:', LocalStorage.getItem('auth'))
+      console.log('[DEBUG] Current showing_login status:', SessionStorage.getItem('showing_login'))
+      this.login = true
+      this.register = false
+      // 设置标志，表示正在显示登录窗口
+      SessionStorage.set('showing_login', 'true')
+      console.log('[DEBUG] After setting showing_login:', SessionStorage.getItem('showing_login'))
     }
   },
   created () {
     var _this = this
+    console.log('[DEBUG] MainLayout created hook called')
+    // 设置标志，表示这是首次加载
+    SessionStorage.set('not_first_load', 'true')
+    console.log('[DEBUG] Set not_first_load to true')
     if (LocalStorage.has('openid')) {
       _this.openid = LocalStorage.getItem('openid')
-      _this.activeTab = LocalStorage.getItem('login_mode')
+      _this.activeTab = LocalStorage.getItem('login_mode') || 'user' // 默认为user
     } else {
       _this.openid = ''
       LocalStorage.set('openid', '')
+      // 设置默认选项卡为user
+      _this.activeTab = 'user'
+      _this.admin = false
     }
     if (LocalStorage.has('login_name')) {
       _this.login_name = LocalStorage.getItem('login_name')
@@ -1047,16 +1291,42 @@ Login () {
   },
   mounted () {
     var _this = this
-    _this.warehouseOptionsGet()
+    console.log('[DEBUG] MainLayout mounted hook called')
+    console.log('[DEBUG] Current auth status:', LocalStorage.getItem('auth'))
+    console.log('[DEBUG] Current showing_login status:', SessionStorage.getItem('showing_login'))
+    // 如果用户已登录，才获取仓库选项
+    if (LocalStorage.getItem('auth') === '1') {
+      console.log('[DEBUG] User is logged in, getting warehouse options')
+      _this.warehouseOptionsGet()
+    } else {
+      console.log('[DEBUG] User is not logged in, skipping warehouse options')
+    }
     _this.link = localStorage.getItem('menulink')
     Bus.$on('needLogin', (val) => {
+      console.log('[DEBUG] needLogin event received, val:', val)
       _this.isLoggedIn()
+    })
+    // 监听关闭登录窗口的事件
+    Bus.$on('closeLogin', (val) => {
+      console.log('[DEBUG] closeLogin event received, val:', val)
+      if (val) {
+        console.log('[DEBUG] Closing login window and setting auth status')
+        _this.login = false
+        _this.authin = '1'
+        _this.staffType()
+        // 登录成功后获取仓库选项
+        _this.warehouseOptionsGet()
+        // 清除showing_login标志
+        SessionStorage.remove('showing_login')
+        console.log('[DEBUG] Removed showing_login flag')
+      }
     })
   },
   updated () {
   },
   beforeDestroy () {
     Bus.$off('needLogin')
+    Bus.$off('closeLogin')
   },
   destroyed () {
   },
@@ -1080,12 +1350,30 @@ Login () {
 </script>
 <style>
 .tabs .q-tab__indicator {
-  width: 25%;
-  height: 1.5px;
+  width: 80%;
+  height: 2px;
   margin: auto;
-  color: #d6d7d7;
+  color: white;
 }
 .tabs .absolute-bottom {
-  bottom: 8px;
+  bottom: 4px;
+}
+
+/* 新增样式 */
+.active-tab {
+  font-weight: bold;
+  opacity: 1 !important;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.inactive-tab {
+  opacity: 0.7 !important;
+}
+
+.tabs .q-tab {
+  padding: 0 16px;
+  min-height: 36px;
+  margin: 4px;
 }
 </style>

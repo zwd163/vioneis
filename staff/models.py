@@ -7,12 +7,12 @@ class ListModel(models.Model):
     staff_type = models.CharField(max_length=255, verbose_name="Staff Type")
     email = models.EmailField(unique=True, blank=True, null=True, verbose_name="Email") # Optional but unique
     phone_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="Phone Number") # Optional for now
-    password = models.CharField(max_length=128, verbose_name="Password") # Store hashed password, handled by Django auth or manually
+    # password field removed as it's not used for authentication
     openid = models.CharField(max_length=255, verbose_name="Openid", null=True, blank=True) # Keep for now, make optional
     is_delete = models.BooleanField(default=False, verbose_name='Delete Label')
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="Create Time")
     update_time = models.DateTimeField(auto_now=True, blank=True, null=True, verbose_name="Update Time")
-    
+
 
     is_lock = models.BooleanField(default=False,verbose_name='Whether the lock')
     class Meta:

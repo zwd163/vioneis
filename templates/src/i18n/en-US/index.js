@@ -48,6 +48,21 @@ export default {
     download: 'Download',
     updatetitle: 'Update Ready',
     updatedesc: 'Version Can Update Now',
+    forgot_password: 'Forgot Password',
+    reset_password: 'Reset Password',
+    new_password: 'New Password',
+    email: 'Email',
+    sending_reset_email: 'Sending reset password email...',
+    reset_email_sent: 'Password reset email has been sent',
+    reset_email_failed: 'Failed to send reset email',
+    invalid_token: 'Invalid or expired token',
+    token_missing: 'Please Add Token To Your Request Headers',
+    password_reset_success: 'Password has been reset successfully',
+    password_reset_failed: 'Failed to reset password',
+    validation: {
+      required: 'This field is required',
+      passwords_must_match: 'Passwords must match'
+    },
     update: 'Update Now',
     chart: ' Chart',
     current_user: 'Current User'

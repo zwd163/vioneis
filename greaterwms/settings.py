@@ -354,3 +354,12 @@ PATCH_THROTTLE = 500
 DELETE_THROTTLE = 500
 
 JWT_TIME = 60 * 60 * 24 * 365 * 20
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-mail.outlook.comvioneip@outlook.com'  # SMTP server address
+EMAIL_PORT = 587  # SMTP server port
+EMAIL_USE_TLS = True  # Use TLS for security
+EMAIL_HOST_USER = 'vioneip@outlook.com'  # SMTP server username
+EMAIL_HOST_PASSWORD = 'Super@vion'  # SMTP server password
+DEFAULT_FROM_EMAIL = 'vioneip@outlook.com'  # Default sender email

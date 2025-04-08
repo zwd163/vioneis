@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import ListModel, TypeListModel
 from utils import datasolve
-from django.contrib.auth.hashers import make_password # Import make_password
+# make_password import removed as password field is no longer used
 
 class StaffGetSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(read_only=True, required=False)
@@ -15,8 +15,8 @@ class StaffGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ListModel
-        # Exclude password for security, keep openid/check_code excluded for now
-        exclude = ['openid', 'is_delete', 'password']
+        # Keep openid/check_code excluded for now
+        exclude = ['openid', 'is_delete']
         read_only_fields = ['id', ]
 
 class StaffPostSerializer(serializers.ModelSerializer):
@@ -26,7 +26,7 @@ class StaffPostSerializer(serializers.ModelSerializer):
     staff_type = serializers.CharField(read_only=False, required=True, validators=[datasolve.data_validate])
     email = serializers.EmailField(read_only=False, required=True) # Added, required
     phone_number = serializers.CharField(read_only=False, required=False, allow_blank=True) # Added, optional
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'}) # Added, required, write-only
+    # password field removed as it's not used for authentication
     # check_code = serializers.IntegerField(read_only=False, required=True, validators=[datasolve.data_validate]) # No longer required for creation
 
     class Meta:
@@ -35,10 +35,8 @@ class StaffPostSerializer(serializers.ModelSerializer):
         exclude = ['is_delete',  'openid']
         read_only_fields = ['id', 'create_time', 'update_time', ]
 
+    # create method simplified as password field is removed
     def create(self, validated_data):
-        # Hash the password provided during creation.
-        # The 'password' field is required=True, so it will be in validated_data.
-        validated_data['password'] = make_password(validated_data['password'])
         return super().create(validated_data)
 
 class StaffUpdateSerializer(serializers.ModelSerializer):
@@ -47,7 +45,7 @@ class StaffUpdateSerializer(serializers.ModelSerializer):
     staff_type = serializers.CharField(read_only=False, required=True, validators=[datasolve.data_validate])
     email = serializers.EmailField(read_only=False, required=False) # Added, optional on update? Assume yes for now.
     phone_number = serializers.CharField(read_only=False, required=False, allow_blank=True) # Added
-    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'}) # Added, optional, write-only
+    # password field removed as it's not used for authentication
 
     class Meta:
         model = ListModel
@@ -55,11 +53,8 @@ class StaffUpdateSerializer(serializers.ModelSerializer):
         exclude = ['openid', 'is_delete']
         read_only_fields = ['id', 'create_time', 'update_time', ]
 
+    # update method simplified as password field is removed
     def update(self, instance, validated_data):
-        # Hash password if it is being updated
-        password = validated_data.pop('password', None)
-        if password:
-            instance.password = make_password(password)
         return super().update(instance, validated_data)
 
 
@@ -69,7 +64,7 @@ class StaffPartialUpdateSerializer(serializers.ModelSerializer):
     staff_type = serializers.CharField(read_only=False, required=False, validators=[datasolve.data_validate])
     email = serializers.EmailField(read_only=False, required=False) # Added
     phone_number = serializers.CharField(read_only=False, required=False, allow_blank=True) # Added
-    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'}) # Added, optional, write-only
+    # password field removed as it's not used for authentication
 
     class Meta:
         model = ListModel
@@ -77,11 +72,8 @@ class StaffPartialUpdateSerializer(serializers.ModelSerializer):
         exclude = ['openid', 'is_delete']
         read_only_fields = ['id', 'create_time', 'update_time', ]
 
+    # update method simplified as password field is removed
     def update(self, instance, validated_data):
-        # Hash password if it is being updated
-        password = validated_data.pop('password', None)
-        if password:
-            instance.password = make_password(password)
         return super().update(instance, validated_data)
 
 class FileRenderSerializer(serializers.ModelSerializer):
@@ -97,7 +89,7 @@ class FileRenderSerializer(serializers.ModelSerializer):
         model = ListModel
         ref_name = 'StaffFileRenderSerializer'
         # Exclude sensitive/internal fields
-        exclude = ['openid', 'is_delete', 'password']
+        exclude = ['openid', 'is_delete']
 
 class StaffTypeGetSerializer(serializers.ModelSerializer):
     staff_type = serializers.CharField(read_only=True, required=False)

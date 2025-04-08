@@ -96,3 +96,4 @@ datas/*.py
 venv/
 pkg/
 venv/
+.roo

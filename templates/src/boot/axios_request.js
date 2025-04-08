@@ -45,13 +45,77 @@ const axiosFile = axios.create({
 
 axiosInstanceAuth.interceptors.request.use(
   function (config) {
+
     const auth = LocalStorage.getItem('auth')
     const login = SessionStorage.getItem('axios_check')
     if (auth || login) {
       config.headers.post['Content-Type'] = 'application/json, charset="utf-8"'
       config.headers.patch['Content-Type'] = 'application/json, charset="utf-8"'
       config.headers.put['Content-Type'] = 'application/json, charset="utf-8"'
-      config.headers.token = LocalStorage.getItem('openid')
+      const token = LocalStorage.getItem('openid')
+      if (!token) {
+        // 检查用户是否已登录（通过其他session信息）
+        const isLoggedIn = SessionStorage.getItem('axios_check') || LocalStorage.getItem('auth')
+
+        if (isLoggedIn) {
+          // 检查是否正在刷新token，避免循环刷新
+          const isRefreshing = SessionStorage.getItem('is_refreshing_token') === 'true'
+          if (isRefreshing) {
+            console.warn('Token refresh already in progress, skipping')
+            return Promise.reject(new Error('Token refresh in progress'))
+          }
+
+          // 设置标志，表示正在刷新token
+          SessionStorage.set('is_refreshing_token', 'true')
+
+          // 记录日志
+          console.warn('Token missing but user seems to be logged in. Attempting to refresh token.')
+
+          // 不立即显示错误，而是尝试刷新token
+          return axiosInstance.post('/login/refresh-token/')
+            .then(response => {
+              if (response.data && response.data.code === '200' && response.data.data && response.data.data.openid) {
+                // 保存新token
+                const newToken = response.data.data.openid
+                LocalStorage.set('openid', newToken)
+                // 设置登录状态
+                LocalStorage.set('auth', '1')
+                // 更新请求头
+                config.headers.token = newToken
+                console.log('Token refreshed successfully')
+                // 如果正在显示登录窗口，关闭它
+                if (SessionStorage.getItem('showing_login') === 'true') {
+                  Bus.$emit('closeLogin', true)
+                  SessionStorage.remove('showing_login')
+                }
+                // 清除正在刷新token的标志
+                SessionStorage.remove('is_refreshing_token')
+                return config
+              } else {
+                // 如果无法获取新token，静默重定向到登录页面
+                console.error('Failed to refresh token:', response.data)
+                // 清除正在刷新token的标志
+                SessionStorage.remove('is_refreshing_token')
+                // 不显示错误消息，直接重定向到登录页面
+                Bus.$emit('needLogin', true)
+                return Promise.reject(new Error('Failed to refresh token'))
+              }
+            })
+            .catch(error => {
+              console.error('Token refresh failed:', error)
+              // 清除正在刷新token的标志
+              SessionStorage.remove('is_refreshing_token')
+              // 不显示错误消息，直接重定向到登录页面
+              Bus.$emit('needLogin', true)
+              return Promise.reject(error)
+            })
+        } else {
+          // 用户确实未登录，重定向到登录页面
+          Bus.$emit('needLogin', true)
+          return Promise.reject(new Error('User not logged in'))
+        }
+      }
+      config.headers.token = token
       config.headers.operator = LocalStorage.getItem('login_id')
       config.headers.language = lang
       if (config.method === 'post' || config.method === 'patch' || config.method === 'put' || config.method === 'delete') {
@@ -77,7 +141,7 @@ axiosInstanceAuth.interceptors.response.use(
           message: response.data.detail,
           icon: 'close',
           color: 'negative',
-          timeout: 1500
+          timeout: 3000
         })
       }
     }
@@ -116,7 +180,7 @@ axiosInstanceAuth.interceptors.response.use(
       message: i18n.t('notice.unknow_error'),
       icon: 'close',
       color: 'negative',
-      timeout: 1500
+      timeout: 3000
     }
     if (error.code === 'ECONNABORTED' || error.message.indexOf('timeout') !== -1 || error.message === 'Network Error') {
       defaultNotify.message = i18n.t('notice.network_error')
@@ -192,13 +256,77 @@ axiosInstanceAuth.interceptors.response.use(
 
 axiosInstanceAuthScan.interceptors.request.use(
   function (config) {
+
     const auth = LocalStorage.getItem('auth')
     const login = SessionStorage.getItem('axios_check')
     if (auth || login) {
       config.headers.post['Content-Type'] = 'application/json, charset="utf-8"'
       config.headers.patch['Content-Type'] = 'application/json, charset="utf-8"'
       config.headers.put['Content-Type'] = 'application/json, charset="utf-8"'
-      config.headers.token = LocalStorage.getItem('openid')
+      const token = LocalStorage.getItem('openid')
+      if (!token) {
+        // 检查用户是否已登录（通过其他session信息）
+        const isLoggedIn = SessionStorage.getItem('axios_check') || LocalStorage.getItem('auth')
+
+        if (isLoggedIn) {
+          // 检查是否正在刷新token，避免循环刷新
+          const isRefreshing = SessionStorage.getItem('is_refreshing_token') === 'true'
+          if (isRefreshing) {
+            console.warn('Token refresh already in progress, skipping')
+            return Promise.reject(new Error('Token refresh in progress'))
+          }
+
+          // 设置标志，表示正在刷新token
+          SessionStorage.set('is_refreshing_token', 'true')
+
+          // 记录日志
+          console.warn('Token missing but user seems to be logged in. Attempting to refresh token.')
+
+          // 不立即显示错误，而是尝试刷新token
+          return axiosInstance.post('/login/refresh-token/')
+            .then(response => {
+              if (response.data && response.data.code === '200' && response.data.data && response.data.data.openid) {
+                // 保存新token
+                const newToken = response.data.data.openid
+                LocalStorage.set('openid', newToken)
+                // 设置登录状态
+                LocalStorage.set('auth', '1')
+                // 更新请求头
+                config.headers.token = newToken
+                console.log('Token refreshed successfully')
+                // 如果正在显示登录窗口，关闭它
+                if (SessionStorage.getItem('showing_login') === 'true') {
+                  Bus.$emit('closeLogin', true)
+                  SessionStorage.remove('showing_login')
+                }
+                // 清除正在刷新token的标志
+                SessionStorage.remove('is_refreshing_token')
+                return config
+              } else {
+                // 如果无法获取新token，静默重定向到登录页面
+                console.error('Failed to refresh token:', response.data)
+                // 清除正在刷新token的标志
+                SessionStorage.remove('is_refreshing_token')
+                // 不显示错误消息，直接重定向到登录页面
+                Bus.$emit('needLogin', true)
+                return Promise.reject(new Error('Failed to refresh token'))
+              }
+            })
+            .catch(error => {
+              console.error('Token refresh failed:', error)
+              // 清除正在刷新token的标志
+              SessionStorage.remove('is_refreshing_token')
+              // 不显示错误消息，直接重定向到登录页面
+              Bus.$emit('needLogin', true)
+              return Promise.reject(error)
+            })
+        } else {
+          // 用户确实未登录，重定向到登录页面
+          Bus.$emit('needLogin', true)
+          return Promise.reject(new Error('User not logged in'))
+        }
+      }
+      config.headers.token = token
       config.headers.operator = LocalStorage.getItem('login_id')
       config.headers.language = lang
       if (config.method === 'post' || config.method === 'patch' || config.method === 'put' || config.method === 'delete') {
@@ -253,7 +381,7 @@ axiosInstanceAuthScan.interceptors.response.use(
       message: i18n.t('notice.unknow_error'),
       icon: 'close',
       color: 'negative',
-      timeout: 1500
+      timeout: 3000
     }
     if (error.code === 'ECONNABORTED' || error.message.indexOf('timeout') !== -1 || error.message === 'Network Error') {
       defaultNotify.message = i18n.t('notice.network_error')
@@ -350,7 +478,7 @@ axiosInstance.interceptors.response.use(
           message: response.data.detail,
           icon: 'close',
           color: 'negative',
-          timeout: 1500
+          timeout: 3000
         })
       }
     }
@@ -362,7 +490,7 @@ axiosInstance.interceptors.response.use(
       message: i18n.t('notice.network_error'),
       icon: 'close',
       color: 'negative',
-      timeout: 1500
+      timeout: 3000
     }
     if (error.code === 'ECONNABORTED' || error.message.indexOf('timeout') !== -1 || error.message === 'Network Error') {
       defaultNotify.message = i18n.t('notice.network_error')
@@ -376,8 +504,15 @@ axiosInstance.interceptors.response.use(
         Notify.create(defaultNotify)
         break
       case 401:
-        defaultNotify.message = i18n.t('notice.401')
-        Notify.create(defaultNotify)
+        // 完全禁止显示401错误消息
+        // 只触发登录窗口
+        console.log('[DEBUG] 401 error detected, URL:', error.config.url)
+        console.log('[DEBUG] Request headers:', error.config.headers)
+        console.log('[DEBUG] Response data:', error.response.data)
+        console.log('[DEBUG] showing_login:', SessionStorage.getItem('showing_login'))
+        console.log('[DEBUG] auth status:', LocalStorage.getItem('auth'))
+        // 不显示错误消息，直接触发登录窗口
+        Bus.$emit('needLogin', true)
         break
       case 403:
         defaultNotify.message = i18n.t('notice.403')
@@ -473,7 +608,70 @@ axiosFile.interceptors.request.use(
     const login = SessionStorage.getItem('axios_check')
     if (auth || login) {
       config.headers.get['Content-Type'] = 'application/vnd.ms-excel'
-      config.headers.token = LocalStorage.getItem('openid')
+      const token = LocalStorage.getItem('openid')
+      if (!token) {
+        // 检查用户是否已登录（通过其他session信息）
+        const isLoggedIn = SessionStorage.getItem('axios_check') || LocalStorage.getItem('auth')
+
+        if (isLoggedIn) {
+          // 检查是否正在刷新token，避免循环刷新
+          const isRefreshing = SessionStorage.getItem('is_refreshing_token') === 'true'
+          if (isRefreshing) {
+            console.warn('Token refresh already in progress, skipping')
+            return Promise.reject(new Error('Token refresh in progress'))
+          }
+
+          // 设置标志，表示正在刷新token
+          SessionStorage.set('is_refreshing_token', 'true')
+
+          // 记录日志
+          console.warn('Token missing but user seems to be logged in. Attempting to refresh token.')
+
+          // 不立即显示错误，而是尝试刷新token
+          return axiosInstance.post('/login/refresh-token/')
+            .then(response => {
+              if (response.data && response.data.code === '200' && response.data.data && response.data.data.openid) {
+                // 保存新token
+                const newToken = response.data.data.openid
+                LocalStorage.set('openid', newToken)
+                // 设置登录状态
+                LocalStorage.set('auth', '1')
+                // 更新请求头
+                config.headers.token = newToken
+                console.log('Token refreshed successfully')
+                // 如果正在显示登录窗口，关闭它
+                if (SessionStorage.getItem('showing_login') === 'true') {
+                  Bus.$emit('closeLogin', true)
+                  SessionStorage.remove('showing_login')
+                }
+                // 清除正在刷新token的标志
+                SessionStorage.remove('is_refreshing_token')
+                return config
+              } else {
+                // 如果无法获取新token，静默重定向到登录页面
+                console.error('Failed to refresh token:', response.data)
+                // 清除正在刷新token的标志
+                SessionStorage.remove('is_refreshing_token')
+                // 不显示错误消息，直接重定向到登录页面
+                Bus.$emit('needLogin', true)
+                return Promise.reject(new Error('Failed to refresh token'))
+              }
+            })
+            .catch(error => {
+              console.error('Token refresh failed:', error)
+              // 清除正在刷新token的标志
+              SessionStorage.remove('is_refreshing_token')
+              // 不显示错误消息，直接重定向到登录页面
+              Bus.$emit('needLogin', true)
+              return Promise.reject(error)
+            })
+        } else {
+          // 用户确实未登录，重定向到登录页面
+          Bus.$emit('needLogin', true)
+          return Promise.reject(new Error('User not logged in'))
+        }
+      }
+      config.headers.token = token
       config.headers.operator = LocalStorage.getItem('login_id')
       config.headers.language = lang
       if (config.method === 'post' || config.method === 'patch' || config.method === 'put' || config.method === 'delete') {
@@ -499,7 +697,7 @@ axiosFile.interceptors.response.use(
           message: response.data.detail,
           icon: 'close',
           color: 'negative',
-          timeout: 1500
+          timeout: 3000
         })
       }
     }
@@ -511,7 +709,7 @@ axiosFile.interceptors.response.use(
       message: i18n.t('notice.network_error'),
       icon: 'close',
       color: 'negative',
-      timeout: 1500
+      timeout: 3000
     }
     if (error.code === 'ECONNABORTED' || error.message.indexOf('timeout') !== -1 || error.message === 'Network Error') {
       defaultNotify.message = i18n.t('notice.network_error')
@@ -525,8 +723,15 @@ axiosFile.interceptors.response.use(
         Notify.create(defaultNotify)
         break
       case 401:
-        defaultNotify.message = i18n.t('notice.401')
-        Notify.create(defaultNotify)
+        // 完全禁止显示401错误消息
+        // 只触发登录窗口
+        console.log('[DEBUG] 401 error detected, URL:', error.config.url)
+        console.log('[DEBUG] Request headers:', error.config.headers)
+        console.log('[DEBUG] Response data:', error.response.data)
+        console.log('[DEBUG] showing_login:', SessionStorage.getItem('showing_login'))
+        console.log('[DEBUG] auth status:', LocalStorage.getItem('auth'))
+        // 不显示错误消息，直接触发登录窗口
+        Bus.$emit('needLogin', true)
         break
       case 403:
         defaultNotify.message = i18n.t('notice.403')

@@ -61,6 +61,24 @@
   <q-page-sticky v-show="!fab1 && !fab2 && !fab3 && !fab4" position="bottom-right" :offset="[18, 120]">
     <q-btn square color="primary" :label="$t('index.submit')" @click="Login"/>
   </q-page-sticky>
+  <q-page-sticky v-show="!fab1 && !fab2 && !fab3 && !fab4" position="bottom" :offset="[0, 120]">
+    <q-btn flat color="primary" :label="$t('index.forgot_password')" @click="forgotPasswordDialog = true"/>
+  </q-page-sticky>
+  <q-dialog v-model="forgotPasswordDialog">
+    <q-card style="min-width: 350px">
+      <q-card-section>
+        <div class="text-h6">{{ $t('index.forgot_password') }}</div>
+      </q-card-section>
+      <q-card-section class="q-pt-none">
+        <q-input dense v-model="forgotPassword.username" :label="$t('index.username')" autofocus />
+        <q-input dense v-model="forgotPassword.email" :label="$t('index.email')" class="q-mt-sm" />
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat :label="$t('index.cancel')" color="primary" v-close-popup />
+        <q-btn flat :label="$t('index.submit')" color="primary" @click="submitForgotPassword" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
@@ -77,7 +95,11 @@ export default defineComponent({
         password: ''
       },
       login_mode: 0,
-    }
+      forgotPasswordDialog: false,
+      forgotPassword: {
+        username: '',
+        email: ''
+      }
   },
   computed: {
     screenwidth: {
@@ -159,6 +181,46 @@ export default defineComponent({
     LoginCancel () {
       var _this = this
       _this.staff_name = ''
+    },
+    submitForgotPassword() {
+      var _this = this;
+      if (_this.forgotPassword.username.length === 0) {
+        _this.$q.notify({
+          type: 'negative',
+          message: _this.$t('notice.mobile_userlogin.notice1')
+        });
+        return;
+      }
+      if (_this.forgotPassword.email.length === 0) {
+        _this.$q.notify({
+          type: 'negative',
+          message: _this.$t('notice.mobile_userlogin.notice2')
+        });
+        return;
+      }
+      _this.$axios.post(_this.baseurl + '/forgot-password/', _this.forgotPassword)
+        .then((res) => {
+          if (res.data.code === '200') {
+            _this.$q.notify({
+              message: _this.$t('notice.mobile_userlogin.notice9')
+            });
+            _this.forgotPasswordDialog = false;
+          } else {
+            _this.$q.notify({
+              type: 'negative',
+              message: _this.$t('notice.mobile_userlogin.notice10')
+            });
+          }
+        })
+        .catch((err) => {
+          _this.$q.notify({
+            type: 'negative',
+            message: _this.$t('notice.mobile_userlogin.notice10')
+          });
+        });
+    },
+    Register () {
+      this.$router.push('/register')
       _this.check_code = ''
       _this.adminlogin = {
         name: '',
