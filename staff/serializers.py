@@ -43,7 +43,7 @@ class StaffUpdateSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(read_only=False, required=True, validators=[datasolve.data_validate])
     real_name = serializers.CharField(read_only=False, required=False, allow_blank=True) # Added
     staff_type = serializers.CharField(read_only=False, required=True, validators=[datasolve.data_validate])
-    email = serializers.EmailField(read_only=False, required=False) # Added, optional on update? Assume yes for now.
+    email = serializers.EmailField(read_only=False, required=True) # Changed to required
     phone_number = serializers.CharField(read_only=False, required=False, allow_blank=True) # Added
     # password field removed as it's not used for authentication
 
@@ -53,9 +53,21 @@ class StaffUpdateSerializer(serializers.ModelSerializer):
         exclude = ['openid', 'is_delete']
         read_only_fields = ['id', 'create_time', 'update_time', ]
 
-    # update method simplified as password field is removed
+    # update method with custom error handling
     def update(self, instance, validated_data):
-        return super().update(instance, validated_data)
+        try:
+            # Check if email already exists for another user
+            email = validated_data.get('email')
+            if email and ListModel.objects.filter(email=email).exclude(id=instance.id).exists():
+                raise serializers.ValidationError({"email": ["This email address is already in use by another user."]})
+
+            return super().update(instance, validated_data)
+        except serializers.ValidationError:
+            # Re-raise validation errors
+            raise
+        except Exception:
+            # Generic database error, likely a unique constraint violation
+            raise serializers.ValidationError({"email": ["This email address is already in use by another user."]})
 
 
 class StaffPartialUpdateSerializer(serializers.ModelSerializer):
@@ -72,9 +84,21 @@ class StaffPartialUpdateSerializer(serializers.ModelSerializer):
         exclude = ['openid', 'is_delete']
         read_only_fields = ['id', 'create_time', 'update_time', ]
 
-    # update method simplified as password field is removed
+    # update method with custom error handling
     def update(self, instance, validated_data):
-        return super().update(instance, validated_data)
+        try:
+            # Check if email already exists for another user
+            email = validated_data.get('email')
+            if email and ListModel.objects.filter(email=email).exclude(id=instance.id).exists():
+                raise serializers.ValidationError({"email": ["This email address is already in use by another user."]})
+
+            return super().update(instance, validated_data)
+        except serializers.ValidationError:
+            # Re-raise validation errors
+            raise
+        except Exception:
+            # Generic database error, likely a unique constraint violation
+            raise serializers.ValidationError({"email": ["This email address is already in use by another user."]})
 
 class FileRenderSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(read_only=False, required=False)

@@ -1,6 +1,7 @@
 import datetime
 
 class Md5(object):
+    @staticmethod
     def md5(s):
         import hashlib
         ctime = str(datetime.datetime.now())

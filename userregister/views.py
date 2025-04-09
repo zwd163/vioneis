@@ -104,13 +104,15 @@ def register(request, *args, **kwargs):
                                                  t_code=Md5.md5(str(timezone.now())),
                                                  developer=1, ip=ip)
                             auth.login(request, user)
+                            # 生成随机码，但不存储到 staff 表中
                             check_code = random.randint(1000, 9999)
+                            # 创建 staff 对象，不传入 check_code 参数
                             staff.objects.create(staff_name=str(data['name']),
                                                  staff_type='Admin',
-                                                 check_code=check_code,
                                                  openid=transaction_code)
+                            # 获取创建的 staff 对象的 ID
                             user_id = staff.objects.filter(openid=transaction_code, staff_name=str(data['name']),
-                                                 staff_type='Admin', check_code=check_code).first().id
+                                                 staff_type='Admin').first().id
                             folder = os.path.exists(os.path.join(settings.BASE_DIR, 'media/' + transaction_code))
                             if not folder:
                                 os.makedirs(os.path.join(settings.BASE_DIR, 'media/' + transaction_code))
@@ -173,8 +175,7 @@ def register(request, *args, **kwargs):
                             for staff_data in randomname:
                                 demo_data = staff(openid=transaction_code,
                                                   staff_name=staff_data,
-                                                  staff_type=str(randomStaffType()),
-                                                  check_code=random.randint(1000, 9999)
+                                                  staff_type=str(randomStaffType())
                                                   )
                                 staff_data_list.append(demo_data)
                             staff.objects.bulk_create(staff_data_list, batch_size=100)

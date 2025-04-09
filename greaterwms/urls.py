@@ -16,6 +16,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='dist/spa/index.html')),
     path('myip/', views.myip, name='myip'),
+    path('reset-password/', views.reset_password_view, name='reset-password'),
     path('asn/', include('asn.urls')),
     path('dn/', include('dn.urls')),
     path('staff/', include('staff.urls')),

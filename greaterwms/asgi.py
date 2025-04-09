@@ -11,8 +11,8 @@ http_application = get_asgi_application()
 import logging
 
 async def application(scope, receive, send):
-    logger = logging.getLogger('asgi')
-    logger.info(f"ASGI请求处理开始, scope类型: {scope['type']}, 路径: {scope.get('path', '')}, 方法: {scope.get('method', '')}, 查询参数: {scope.get('query_string', b'').decode()}")
+    #logger = logging.getLogger('asgi')
+    #logger.info(f"ASGI请求处理开始, scope类型: {scope['type']}, 路径: {scope.get('path', '')}, 方法: {scope.get('method', '')}, 查询参数: {scope.get('query_string', b'').decode()}")
     if scope['type'] in ['http', 'https']:
         # 这里有风险，向外部链接发送数据
         #ASGIHandler.asgi_get_handler(scope)

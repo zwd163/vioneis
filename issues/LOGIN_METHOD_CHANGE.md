@@ -19,4 +19,12 @@
 5. 密码可以由 admin 重置，在staff管理界面，每个用户的记录后面都有一个"重置密码"的按钮，admin点击重置密码按钮，立即发送邮件到用户邮箱，邮件内容包含用户名，和密码重置链接。如果没有管理员邮箱，则密码自动设置为员工的电话号码后4位。
 6. 登录界面添加'忘记密码'和'注册'按钮
 7. 点击忘记密码按钮，跳转到找回密码界面，输入用户名和邮箱，如果用户名和邮箱匹配，则发送重置密码邮件到用户邮箱，邮件内容包含用户名，和密码重置链接
+8. staff list，缺少 phone,email ,real name columns， staffname 改为登录名(login name)， 界面中显示real name
+9. NEW staff 界面，缺少 phone,email,real name inputbox, email 是必填项 格式需要校验。添加完成后，自动向用户的邮箱发送密码设置邮件
+10. 删除CHECK CODE功能和相关的页面，staff 模块，应该去掉 CHECK CODE 维护的功能，这个字段已经没有用了
 
+
+bug:
+1. 注册 admin 报错, fixed
+2. Baldwin 重置密码后，不能登录，Server Error, fixed
+3. 

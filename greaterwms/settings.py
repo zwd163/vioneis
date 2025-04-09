@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'throttle.apps.ThrottleConfig',
     'uploadfile.apps.UploadfileConfig',
     'scanner.apps.ScannerConfig',
+    'utils',
     'rest_framework',
     'django_filters',
     'corsheaders',
@@ -96,6 +97,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'greaterwms.wsgi.application'
 CSRF_COOKIE_SAMESITE = None
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = None  # Set to 'Lax' in production
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
@@ -356,10 +365,40 @@ DELETE_THROTTLE = 500
 JWT_TIME = 60 * 60 * 24 * 365 * 20
 
 # Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Use console backend for testing
+
+#Uncomment and configure these settings to use a real email server
+#SMTP settings for pissmail
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-mail.outlook.comvioneip@outlook.com'  # SMTP server address
-EMAIL_PORT = 587  # SMTP server port
-EMAIL_USE_TLS = True  # Use TLS for security
-EMAIL_HOST_USER = 'vioneip@outlook.com'  # SMTP server username
-EMAIL_HOST_PASSWORD = 'Super@vion'  # SMTP server password
-DEFAULT_FROM_EMAIL = 'vioneip@outlook.com'  # Default sender email
+EMAIL_HOST = 'mail.pissmail.com'
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = 'vioneip@pissmail.com'
+EMAIL_HOST_PASSWORD = 'Super@vion'  # Use App Password, not your regular password
+DEFAULT_FROM_EMAIL = 'vioneip@pissmail.com'
+EMAIL_TIMEOUT = 30
+
+# SMTP settings for QQ Mail
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.qq.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+# EMAIL_HOST_USER = 'your-qq-number@qq.com'
+# EMAIL_HOST_PASSWORD = 'your-authorization-code'  # Use Authorization Code, not your regular password
+# DEFAULT_FROM_EMAIL = 'your-qq-number@qq.com'
+# EMAIL_TIMEOUT = 30
+
+
+
+# SMTP settings for GMX Mail
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'mail.gmx.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = False
+# EMAIL_USE_SSL = False
+# EMAIL_HOST_USER = 'vioneip@gmx.com'
+# EMAIL_HOST_PASSWORD = 'Super@vion'  # Use Authorization Code, not your regular password
+# DEFAULT_FROM_EMAIL = 'vioneip@gmx.com'
+# EMAIL_TIMEOUT = 30

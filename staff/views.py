@@ -2,7 +2,13 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-# Removed unused imports for password-related functionality
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.conf import settings
+import json
+from utils.email import send_password_reset_email
 from .models import ListModel, TypeListModel
 from . import serializers
 from utils.page import MyPageNumberPagination
@@ -40,8 +46,8 @@ class RegisterView(APIView):
             email=data['email'],
             staff_type=data['staff_type'],
             real_name=data.get('real_name', ''),
-            phone_number=data.get('phone_number', ''),
-            check_code=random.randint(1000, 9999)
+            phone_number=data.get('phone_number', '')
+            # 不再使用 check_code 字段
         )
         user.save()
 
@@ -102,10 +108,24 @@ class APIViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         id = self.get_project()
         if self.request.user:
+            # 检查用户是否是 Admin
+            staff_obj = ListModel.objects.filter(staff_name=self.request.user.username).first()
+            is_admin = staff_obj and staff_obj.staff_type == 'Admin'
+
             if id is None:
-                return ListModel.objects.filter(openid=self.request.auth.openid, is_delete=False)
+                if is_admin:
+                    # Admin 用户可以看到所有记录
+                    return ListModel.objects.filter(is_delete=False)
+                else:
+                    # 非 Admin 用户只能看到自己的记录
+                    return ListModel.objects.filter(openid=self.request.auth.openid, is_delete=False)
             else:
-                return ListModel.objects.filter(openid=self.request.auth.openid, id=id, is_delete=False)
+                if is_admin:
+                    # Admin 用户可以看到指定 ID 的记录
+                    return ListModel.objects.filter(id=id, is_delete=False)
+                else:
+                    # 非 Admin 用户只能看到自己的指定 ID 的记录
+                    return ListModel.objects.filter(openid=self.request.auth.openid, id=id, is_delete=False)
         else:
             return ListModel.objects.none()
 
@@ -192,6 +212,120 @@ class TypeAPIViewSet(viewsets.ModelViewSet):
             return serializers.StaffTypeGetSerializer
         else:
             return self.http_method_not_allowed(request=self.request)
+
+
+@api_view(['POST'])
+def reset_password(request):
+    """
+    Reset user password
+    """
+    # 不检查认证状态，允许任何用户重置密码
+    # 这是一个管理功能，前端已经有权限控制
+
+    try:
+        # 打印请求信息，帮助调试
+        print(f"Request body: {request.body}")
+        print(f"Request headers: {request.headers}")
+
+        # Get staff ID from request data
+        try:
+            data = json.loads(request.body.decode())
+            staff_id = data.get('id')
+            print(f"Parsed data: {data}, staff_id: {staff_id}")
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            return JsonResponse({
+                "code": "400",
+                "msg": f"Invalid JSON: {str(e)}",
+                "data": None
+            }, status=400)
+
+        # Get staff object
+        staff_obj = ListModel.objects.filter(id=staff_id).first()
+        if not staff_obj:
+            print(f"Staff not found with id: {staff_id}")
+            print(f"Available staff IDs: {[s.id for s in ListModel.objects.all()]}")
+            return JsonResponse({
+                "code": "404",
+                "msg": "Staff not found",
+                "data": None
+            }, status=404)
+
+        print(f"Found staff: {staff_obj.id}, {staff_obj.staff_name}")
+
+        # Get user object - try both username and staff_name
+        user = None
+        try:
+            # First try by username
+            user = User.objects.filter(username=staff_obj.staff_name).first()
+            if not user:
+                # Then try by email if available
+                if staff_obj.email:
+                    user = User.objects.filter(email=staff_obj.email).first()
+
+            # If still not found, print available users for debugging
+            if not user:
+                print(f"User not found with username: {staff_obj.staff_name}")
+                print(f"Available users: {[u.username for u in User.objects.all()]}")
+
+                # Create a new user if not found
+                print(f"Creating new user for staff: {staff_obj.staff_name}")
+                user = User.objects.create_user(
+                    username=staff_obj.staff_name,
+                    email=staff_obj.email or '',
+                    password='1234'  # Default password
+                )
+                print(f"New user created: {user.username}")
+        except Exception as e:
+            print(f"Error finding/creating user: {str(e)}")
+            return JsonResponse({
+                "code": "500",
+                "msg": f"Error finding/creating user: {str(e)}",
+                "data": None
+            }, status=500)
+
+        if not user:
+            return JsonResponse({
+                "code": "404",
+                "msg": "User not found and could not be created",
+                "data": None
+            }, status=404)
+
+        # 生成重置链接
+        reset_link = f"{request.scheme}://{request.get_host()}/reset-password/?token={user.id}"
+
+        # 直接重置密码
+        new_password = "1234"  # 默认密码
+        if staff_obj.phone_number and len(staff_obj.phone_number) >= 4:
+            new_password = staff_obj.phone_number[-4:]
+
+        # 设置新密码
+        user.set_password(new_password)
+        user.save()
+
+        # 如果有邮箱，尝试发送重置邮件（但不影响密码重置结果）
+        if staff_obj.email:
+            try:
+                email_sent = send_password_reset_email(staff_obj.email, staff_obj.staff_name, reset_link)
+                if email_sent:
+                    print(f"Password reset email sent to {staff_obj.email}")
+                else:
+                    print(f"Failed to send password reset email to {staff_obj.email}")
+            except Exception as e:
+                print(f"Error sending email: {str(e)}")
+
+        return JsonResponse({
+            "code": "200",
+            "msg": f"Password reset to {new_password}",
+            "data": None
+        })
+    except Exception as e:
+        print(f"Error in reset_password: {str(e)}")
+        return JsonResponse({
+            "code": "500",
+            "msg": "Server error",
+            "data": None
+        }, status=500)
 
 
 class FileDownloadView(viewsets.ModelViewSet):

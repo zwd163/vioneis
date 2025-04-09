@@ -1,4 +1,5 @@
 class FBMsg(object):
+    @staticmethod
     def ret():
         ret = {"code": "200", "msg": "Success", "data": None}
         return ret
@@ -20,6 +21,7 @@ class FBMsg(object):
     def err_order_fail():
         err_order_fail = {"code": "1006", "msg": "订单支付失败", "data": None}
         return err_order_fail
+    @staticmethod
     def err_ret():
         err_ret = {"code": "400", "msg": "Error", "data": None}
         return err_ret
@@ -47,18 +49,22 @@ class FBMsg(object):
     def err_auth():
         err_auth = {'code': "1021", 'msg': '用户不存在'}
         return err_auth
+    @staticmethod
     def err_user_same():
         err_user_same = {'code': "1022", 'msg': 'User Is Exists'}
         return err_user_same
     def error_referer():
         error_referer = {'code': "1023", 'msg': '错误的token'}
         return error_referer
+    @staticmethod
     def err_password1_empty():
         err_password1_empty = {'code': "1024", 'msg': 'Password Can Not Be Empty'}
         return err_password1_empty
+    @staticmethod
     def err_password2_empty():
         err_password2_empty = {'code': "1025", 'msg': 'Please Confirm The Password'}
         return err_password2_empty
+    @staticmethod
     def err_password_not_same():
         err_password_not_same = {'code': "1026", 'msg': 'Password Is Not Same One'}
         return err_password_not_same
@@ -278,3 +284,22 @@ class FBMsg(object):
     def wms_capcha_n():
         wms_capcha_n = {"code": "100082", "msg": "验证码不存在", "data": None}
         return wms_capcha_n
+    @staticmethod
+    def err_name_empty():
+        err_name_empty = {"code": "1019", "msg": "用户名不能为空", "data": None}
+        return err_name_empty
+
+    @staticmethod
+    def err_email_empty():
+        err_email_empty = {"code": "1020", "msg": "Email Can Not Be Empty", "data": None}
+        return err_email_empty
+
+    @staticmethod
+    def err_email_format():
+        err_email_format = {"code": "1021", "msg": "Email Format Error", "data": None}
+        return err_email_format
+
+    @staticmethod
+    def err_user_same_email():
+        err_user_same_email = {"code": "1022", "msg": "Email Is Already In Use", "data": None}
+        return err_user_same_email

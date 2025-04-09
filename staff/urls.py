@@ -5,6 +5,8 @@ urlpatterns = [
 path(r'', views.APIViewSet.as_view({"get": "list", "post": "create"}), name="staff"),
 path(r'type/', views.TypeAPIViewSet.as_view({"get": "list"}), name="stafftype"),
 path(r'file/', views.FileDownloadView.as_view({"get": "list"}), name="stafffiledownload"),
+path(r'reset-password/', views.reset_password, name="staff_reset_password"),
+path(r'reset_password/', views.reset_password, name="staff_reset_password_alt"),
 re_path(r'^(?P<pk>\d+)/$', views.APIViewSet.as_view({
     'get': 'retrieve',
     'put': 'update',
