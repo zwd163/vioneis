@@ -1208,11 +1208,10 @@ Login () {
 
     warehouseOptionsGet () {
       var _this = this
-      // 使用axios直接发送请求，以便于调试
-      const axios = require('axios')
-      axios.get('http://127.0.0.1:8009/warehouse/multiple/?max_page=30')
-        .then((response) => {
-          const res = response.data
+      // 使用 getauth 函数发送请求，而不是直接使用 axios
+      // 这样可以确保使用正确的 baseurl 和认证信息
+      getauth('warehouse/multiple/?max_page=30')
+        .then((res) => {
           if (res.count === 1) {
             _this.openid = res.results[0].openid
             _this.warehouse_name = res.results[0].warehouse_name
@@ -1228,15 +1227,13 @@ Login () {
             }
           }
         })
-        .catch(error => {
-          console.error('Error fetching warehouse options:', error)
-        })
         .catch((err) => {
-          console.log(err)
+          console.error('Error fetching warehouse options:', err)
           _this.$q.notify({
-            message: err.detail,
+            message: err.detail || 'Failed to fetch warehouse options',
             icon: 'close',
-            color: 'negative'
+            color: 'negative',
+            timeout: 5000
           })
         })
     },

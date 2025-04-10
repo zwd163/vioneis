@@ -48,6 +48,7 @@ export default {
     download: 'ダウンロード',
     updatetitle: 'アップグレードの準備ができました',
     updatedesc: 'バージョンをアップグレードする準備ができました',
+    login_error: 'ユーザー名またはパスワードが無効です',
     update: '今すぐ写新',
     chart: 'レポート',
     current_user: '現在の使用者'

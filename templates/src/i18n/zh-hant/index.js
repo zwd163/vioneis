@@ -48,6 +48,7 @@ export default {
     download: '下載',
     updatetitle: '升級就緒',
     updatedesc: '版本已經升級準備就緒',
+    login_error: '用戶名或密碼錯誤',
     update: '馬上更新',
     chart: '報表',
     current_user: '當前用戶'

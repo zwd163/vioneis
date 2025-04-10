@@ -48,6 +48,7 @@ export default {
     download: 'Télécharger',
     updatetitle: 'Mise à niveau prête',
     updatedesc: 'La version est prête pour la mise à niveau ',
+    login_error: "Nom d'utilisateur ou mot de passe invalide",
     update: 'Mettez à jour maintenant',
     chart: 'Reportage',
     current_user: 'Utilisateur actuel'

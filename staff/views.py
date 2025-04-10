@@ -191,9 +191,23 @@ class APIViewSet(viewsets.ModelViewSet):
                     admin_openid = token
                     print(f"Debug - Using token from headers as openid: {admin_openid}")
 
-            # 直接使用 admin4 作为用户名，因为我们知道这是一个 Admin 用户
-            username = 'admin4'
-            print(f"Debug - Using hardcoded username: {username}")
+            # 获取当前登录用户的用户名
+            username = None
+            if hasattr(request, 'user') and request.user is not None and hasattr(request.user, 'name'):
+                username = request.user.name
+                print(f"Debug - Using authenticated username: {username}")
+
+            # 如果无法从请求中获取用户名，尝试从 Users 表中查找与 openid 匹配的用户
+            if not username and admin_openid:
+                from userprofile.models import Users
+                user_obj = Users.objects.filter(openid=admin_openid).first()
+                if user_obj:
+                    username = user_obj.name
+                    print(f"Debug - Found username from openid: {username}")
+
+            # 如果仍然无法获取用户名，返回错误
+            if not username:
+                return Response({'error': 'Cannot determine current user. Authentication failed.'}, status=status.HTTP_401_UNAUTHORIZED)
 
             # 记录调试信息
             print(f"Debug - auth: {request.auth}, openid: {admin_openid}")
@@ -208,7 +222,7 @@ class APIViewSet(viewsets.ModelViewSet):
             print(f"Debug - admin_staff: {admin_staff}, staff_type: {admin_staff.staff_type if admin_staff else 'None'}")
 
             if not admin_staff:
-                # 如果找不到 admin4，尝试找其他 Admin 用户
+                # 如果找不到当前用户，尝试找其他 Admin 用户
                 admin_staff = ListModel.objects.filter(staff_type='Admin').first()
                 if admin_staff:
                     username = admin_staff.staff_name
@@ -228,8 +242,10 @@ class APIViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Only Admin users can create staff'}, status=status.HTTP_403_FORBIDDEN)
 
             data = request.data.copy() # Use copy to avoid modifying the original request data
-            # Use the current admin's openid for all staff users
-            data['openid'] = admin_openid
+            # 使用当前 Admin 用户的 openid 作为新创建的 staff 用户的 openid
+            # 确保使用 admin_staff 的 openid，而不是从请求中获取的 openid
+            data['openid'] = admin_staff.openid
+            print(f"Debug - Using admin_staff openid: {admin_staff.openid} for new staff user")
 
             # 验证email字段是否存在且不为空
             if not data.get('email'):
@@ -277,6 +293,20 @@ class APIViewSet(viewsets.ModelViewSet):
         if qs.openid != self.request.auth.openid:
             raise APIException({"detail": "Cannot Delete Data Which Not Yours"})
         else:
+            # 检查是否是 Admin 用户
+            if qs.staff_type == 'Admin':
+                # 检查当前 openid 下是否还有其他 Admin 用户
+                admin_count = ListModel.objects.filter(
+                    openid=qs.openid,
+                    staff_type='Admin',
+                    is_delete=False
+                ).count()
+
+                # 如果只有一个 Admin 用户，不允许删除
+                if admin_count <= 1:
+                    raise APIException({"detail": "Cannot delete the last Admin user for this openid"})
+
+            # 如果不是最后一个 Admin 或者不是 Admin，允许删除
             qs.is_delete = True
             qs.save()
             serializer = self.get_serializer(qs, many=False)

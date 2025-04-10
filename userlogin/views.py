@@ -41,9 +41,16 @@ def login(request, *args, **kwargs):
 
         # 检查用户是否是 Admin
         is_admin = False
-        staff_obj = staff.objects.filter(staff_name__iexact=str(user.username)).first()
-        if staff_obj:
-            is_admin = staff_obj.staff_type == 'Admin'
+        # 添加 is_delete=False 条件，确保被标记为删除的用户无法登录
+        staff_obj = staff.objects.filter(staff_name__iexact=str(user.username), is_delete=False).first()
+        if not staff_obj:
+            # 如果用户在 staff 表中不存在或已被标记为删除，返回错误
+            err_ret = FBMsg.err_ret()
+            err_ret['msg'] = 'Invalid username or password'
+            err_ret['data'] = data
+            return JsonResponse(err_ret, status=status.HTTP_401_UNAUTHORIZED)
+
+        is_admin = staff_obj.staff_type == 'Admin'
 
         # 只有在 Admin 注册时才应该生成新的 openid
         # 如果不是 Admin 且 openid 为空，应该报错
@@ -59,38 +66,13 @@ def login(request, *args, **kwargs):
                 err_ret['data'] = data
                 return JsonResponse(err_ret, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Case-insensitive staff name search
-        staff_obj = staff.objects.filter(staff_name__iexact=str(user.username)).first()
-        if staff_obj:
-            # 确保 staff 表中的 openid 与用户的 openid 一致
-            if staff_obj.openid != user_detail.openid:
-                staff_obj.openid = user_detail.openid
-                staff_obj.save()
-            staff_id = staff_obj.id
-        else:
-            # 如果在 staff 表中找不到用户，创建一个新的 staff 记录
-            try:
-                # 获取用户的 email
-                staff_email = None
-                # 尝试从已存在的 staff 记录中获取 email
-                existing_staff = staff.objects.filter(staff_name__iexact=user.username).first()
-                if existing_staff and existing_staff.email:
-                    staff_email = existing_staff.email
-
-                new_staff = staff(
-                    staff_name=user.username,
-                    staff_type='Admin',  # 设置为 Admin 类型
-                    openid=user_detail.openid,
-                    email=staff_email  # 如果有 email，则使用，否则为 None
-                )
-                new_staff.save()
-                staff_id = new_staff.id
-            except Exception as e:
-                print(f"Error creating staff record: {str(e)}")
-                err_ret = FBMsg.err_ret()
-                err_ret['msg'] = 'Invalid username or password'
-                err_ret['data'] = data
-                return JsonResponse(err_ret, status=status.HTTP_401_UNAUTHORIZED)
+        # 不需要再次查询 staff 表，因为我们已经在上面查询过了
+        # 并且确保了 staff_obj 不为 None 且 is_delete=False
+        # 确保 staff 表中的 openid 与用户的 openid 一致
+        if staff_obj.openid != user_detail.openid:
+            staff_obj.openid = user_detail.openid
+            staff_obj.save()
+        staff_id = staff_obj.id
 
         data = {
             "name": data['name'],

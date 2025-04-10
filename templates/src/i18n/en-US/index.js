@@ -48,6 +48,7 @@ export default {
     download: 'Download',
     updatetitle: 'Update Ready',
     updatedesc: 'Version Can Update Now',
+    login_error: 'Invalid username or password',
     forgot_password: 'Forgot Password',
     reset_password: 'Reset Password',
     new_password: 'New Password',
