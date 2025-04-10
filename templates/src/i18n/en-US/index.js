@@ -398,15 +398,28 @@ export default {
   },
   staff: {
     staff: 'Staff',
-    check_code: 'Check Code',
+
     view_staff: {
+      login_name: 'Login Name',
+      real_name: 'Real Name',
       staff_name: 'Staff Name',
       staff_type: 'Staff Type',
+      email: 'Email',
+      email_error: 'Please Enter A Valid Email',
+      email_required: 'Email Is Required',
+      email_duplicate: 'This Email Address Is Already In Use By Another User',
+      phone_number: 'Phone Number',
       error1: 'Please Enter The Staff Name',
       error2: 'Please Enter The Staff Type',
       lock: 'lock',
       unlock: 'unlock'
-    }
+    },
+    reset_password: 'Reset Password',
+    reset_password_confirm: 'Are you sure you want to reset the password for this user?',
+    reset_password_email_sent: 'A password reset email will be sent to:',
+    reset_password_no_email: 'This user has no email address. The password will be reset to the last 4 digits of their phone number or 1234.',
+    reset_password_success: 'Password has been reset successfully',
+    reset_password_failed: 'Failed to reset password'
   },
   stock: {
     stocklist: 'Stock List',

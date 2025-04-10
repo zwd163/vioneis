@@ -71,7 +71,7 @@ export default {
 
       _this.$q.loading.show()
 
-      post('login/reset-password-confirm/', {
+      post('userlogin/reset-password-confirm/', {
         token: _this.token,
         new_password: _this.password,
         confirm_password: _this.confirmPassword

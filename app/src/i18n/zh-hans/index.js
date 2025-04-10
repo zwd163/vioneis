@@ -379,7 +379,7 @@ export default {
   },
   staff: {
     staff: '员工列表',
-    check_code: '验证码',
+
     view_staff: {
       staff_name: '员工名称',
       staff_type: '员工类型',

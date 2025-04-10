@@ -9,9 +9,7 @@
         <transition appear enter-active-class="animated zoomIn">
           <q-route-tab name="stafflist" :label="$t('staff.staff')" icon="perm_contact_calendar" :to="{ name: 'stafflist' }" exact/>
         </transition>
-        <transition appear enter-active-class="animated zoomIn">
-          <q-route-tab name="stafflist_check_code" :label="$t('staff.check_code')" icon="published_with_changes" :to="{ name: 'stafflist_check_code' }" exact/>
-        </transition>
+
         <transition appear enter-active-class="animated zoomIn">
           <q-route-tab name="stafftype" :label="$t('staff.view_staff.staff_type')" icon="img:statics/staff/stafftype.png" :to="{ name: 'stafftype' }" exact/>
         </transition>

@@ -385,7 +385,7 @@ export default {
   },
   staff: {
     staff: 'Спіс супрацоўнікаў',
-    check_code: 'Код верыфікацыі',
+
     view_staff: {
       staff_name: 'імя супрацоўніка',
       staff_type: 'тып супрацоўніка',

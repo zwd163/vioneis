@@ -385,7 +385,7 @@ export default {
   },
   staff: {
     staff: 'スタッフ表',
-    check_code: '验证码',
+
     view_staff: {
       staff_name: 'スタッフ名',
       staff_type: 'スタッフクラス型',

@@ -295,11 +295,6 @@ const routes = [{
         component: () => import('pages/staff/stafflist.vue')
       },
       {
-        path: 'stafflist_check_code',
-        name: 'stafflist_check_code',
-        component: () => import('pages/staff/stafflist_check_code.vue')
-      },
-      {
         path: 'stafftype',
         name: 'stafftype',
         component: () => import('pages/staff/stafftype.vue')

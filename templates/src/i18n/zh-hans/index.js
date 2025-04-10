@@ -48,6 +48,7 @@ export default {
     download: '下载',
     updatetitle: '升级就绪',
     updatedesc: '版本已经升级准备就绪',
+    login_error: '用户名或密码错误',
     forgot_password: '忘记密码',
     reset_password: '重置密码',
     new_password: '新密码',
@@ -394,15 +395,28 @@ export default {
   },
   staff: {
     staff: '员工列表',
-    check_code: '验证码',
+
     view_staff: {
+      login_name: '登录名',
+      real_name: '真实姓名',
       staff_name: '员工名称',
       staff_type: '员工类型',
+      email: '电子邮箱',
+      email_error: '请输入有效的电子邮箱',
+      email_required: '电子邮箱为必填项',
+      email_duplicate: '该电子邮箱已被其他用户使用',
+      phone_number: '电话号码',
       error1: '请输入员工姓名',
       error2: '请输入员工类型',
       lock: '锁定',
       unlock: '解锁'
-    }
+    },
+    reset_password: '重置密码',
+    reset_password_confirm: '您确定要重置此用户的密码吗？',
+    reset_password_email_sent: '密码重置邮件将发送至：',
+    reset_password_no_email: '此用户没有电子邮箱。密码将被重置为其电话号码的后4位或1234。',
+    reset_password_success: '密码重置成功',
+    reset_password_failed: '密码重置失败'
   },
   stock: {
     stocklist: '库存列表',

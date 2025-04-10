@@ -180,7 +180,7 @@ axiosInstanceAuth.interceptors.response.use(
       message: i18n.t('notice.unknow_error'),
       icon: 'close',
       color: 'negative',
-      timeout: 3000
+      timeout: 5000  // 增加通知显示时间到5秒
     }
     if (error.code === 'ECONNABORTED' || error.message.indexOf('timeout') !== -1 || error.message === 'Network Error') {
       defaultNotify.message = i18n.t('notice.network_error')
@@ -381,7 +381,7 @@ axiosInstanceAuthScan.interceptors.response.use(
       message: i18n.t('notice.unknow_error'),
       icon: 'close',
       color: 'negative',
-      timeout: 3000
+      timeout: 5000  // 增加通知显示时间到5秒
     }
     if (error.code === 'ECONNABORTED' || error.message.indexOf('timeout') !== -1 || error.message === 'Network Error') {
       defaultNotify.message = i18n.t('notice.network_error')
@@ -478,7 +478,7 @@ axiosInstance.interceptors.response.use(
           message: response.data.detail,
           icon: 'close',
           color: 'negative',
-          timeout: 3000
+          timeout: 5000  // 增加通知显示时间到5秒
         })
       }
     }
@@ -490,7 +490,7 @@ axiosInstance.interceptors.response.use(
       message: i18n.t('notice.network_error'),
       icon: 'close',
       color: 'negative',
-      timeout: 3000
+      timeout: 5000  // 增加通知显示时间到5秒
     }
     if (error.code === 'ECONNABORTED' || error.message.indexOf('timeout') !== -1 || error.message === 'Network Error') {
       defaultNotify.message = i18n.t('notice.network_error')

@@ -385,7 +385,7 @@ export default {
   },
   staff: {
     staff: 'Mitarbeiterliste',
-    check_code: 'Bestätigungs-Code',
+
     view_staff: {
       staff_name: 'Mitarbeitername',
       staff_type: 'Mitarbeitertyp',

@@ -43,15 +43,17 @@
         <template v-slot:body="props">
           <q-tr :props="props">
             <template v-if="props.row.id === editid">
-              <q-td key="staff_name" :props="props">
+              <q-td key="staff_name" :props="props" class="text-center">
                 <q-input
                   dense
                   outlined
                   square
                   v-model="editFormData.staff_name"
-                  :label="$t('staff.view_staff.staff_name')"
-                  autofocus
-                  :rules="[val => (val && val.length > 0) || error1]"
+                  :label="$t('staff.view_staff.login_name')"
+                  readonly
+                  disable
+                  class="q-mx-auto"
+                  style="max-width: 200px;"
                 />
               </q-td>
             </template>
@@ -59,7 +61,23 @@
               <q-td key="staff_name" :props="props">{{ props.row.staff_name }}</q-td>
             </template>
             <template v-if="props.row.id === editid">
-              <q-td key="staff_type" :props="props">
+              <q-td key="real_name" :props="props" class="text-center">
+                <q-input
+                  dense
+                  outlined
+                  square
+                  v-model="editFormData.real_name"
+                  :label="$t('staff.view_staff.real_name')"
+                  class="q-mx-auto"
+                  style="max-width: 200px;"
+                />
+              </q-td>
+            </template>
+            <template v-else-if="props.row.id !== editid">
+              <q-td key="real_name" :props="props">{{ props.row.real_name || '-' }}</q-td>
+            </template>
+            <template v-if="props.row.id === editid">
+              <q-td key="staff_type" :props="props" class="text-center">
                 <q-select
                   dense
                   outlined
@@ -70,11 +88,46 @@
                   transition-hide="scale"
                   :label="$t('staff.view_staff.staff_type')"
                   :rules="[val => (val && val.length > 0) || error2]"
+                  class="q-mx-auto"
+                  style="max-width: 200px;"
                 />
               </q-td>
             </template>
             <template v-else-if="props.row.id !== editid">
               <q-td key="staff_type" :props="props">{{ props.row.staff_type }}</q-td>
+            </template>
+            <template v-if="props.row.id === editid">
+              <q-td key="email" :props="props" class="text-center">
+                <q-input
+                  dense
+                  outlined
+                  square
+                  v-model="editFormData.email"
+                  :label="$t('staff.view_staff.email')"
+                  :rules="[val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || $t('staff.view_staff.email_error')]"
+                  class="q-mx-auto"
+                  style="max-width: 200px;"
+                />
+              </q-td>
+            </template>
+            <template v-else-if="props.row.id !== editid">
+              <q-td key="email" :props="props">{{ props.row.email || '-' }}</q-td>
+            </template>
+            <template v-if="props.row.id === editid">
+              <q-td key="phone_number" :props="props" class="text-center">
+                <q-input
+                  dense
+                  outlined
+                  square
+                  v-model="editFormData.phone_number"
+                  :label="$t('staff.view_staff.phone_number')"
+                  class="q-mx-auto"
+                  style="max-width: 200px;"
+                />
+              </q-td>
+            </template>
+            <template v-else-if="props.row.id !== editid">
+              <q-td key="phone_number" :props="props">{{ props.row.phone_number || '-' }}</q-td>
             </template>
             <q-td key="create_time" :props="props">{{ props.row.create_time }}</q-td>
             <q-td key="update_time" :props="props">{{ props.row.update_time }}</q-td>
@@ -101,6 +154,16 @@
                   @click="editData(props.row)"
                 >
                   <q-tooltip content-class="bg-amber text-black shadow-4" :offset="[10, 10]" content-style="font-size: 12px">{{ $t('edit') }}</q-tooltip>
+                </q-btn>
+                <q-btn
+                  round
+                  flat
+                  push
+                  color="blue"
+                  icon="key"
+                  @click="resetPassword(props.row)"
+                >
+                  <q-tooltip content-class="bg-amber text-black shadow-4" :offset="[10, 10]" content-style="font-size: 12px">{{ $t('staff.reset_password') }}</q-tooltip>
                 </q-btn>
                 <q-btn
                   round
@@ -170,9 +233,18 @@
             outlined
             square
             v-model.trim="newFormData.staff_name"
-            :label="$t('staff.view_staff.staff_name')"
+            :label="$t('staff.view_staff.login_name')"
             autofocus
             :rules="[val => (val && val.length > 0) || error1]"
+            @keyup.enter="newDataSubmit()"
+          />
+          <q-input
+            dense
+            outlined
+            square
+            v-model.trim="newFormData.real_name"
+            :label="$t('staff.view_staff.real_name')"
+            style="margin-top: 5px"
             @keyup.enter="newDataSubmit()"
           />
           <q-select
@@ -187,6 +259,25 @@
             :rules="[val => (val && val.length > 0) || error2]"
             @keyup.enter="newDataSubmit()"
             style="margin-top: 5px"
+          />
+          <q-input
+            dense
+            outlined
+            square
+            v-model.trim="newFormData.email"
+            :label="$t('staff.view_staff.email')"
+            :rules="[val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || $t('staff.view_staff.email_error')]"
+            style="margin-top: 5px"
+            @keyup.enter="newDataSubmit()"
+          />
+          <q-input
+            dense
+            outlined
+            square
+            v-model.trim="newFormData.phone_number"
+            :label="$t('staff.view_staff.phone_number')"
+            style="margin-top: 5px"
+            @keyup.enter="newDataSubmit()"
           />
         </q-card-section>
         <div style="float: right; padding: 15px 15px 15px 0">
@@ -208,6 +299,27 @@
         <div style="float: right; padding: 15px 15px 15px 0">
           <q-btn color="white" text-color="black" style="margin-right: 25px" @click="deleteDataCancel()">{{ $t('cancel') }}</q-btn>
           <q-btn color="primary" @click="deleteDataSubmit()">{{ $t('submit') }}</q-btn>
+        </div>
+      </q-card>
+    </q-dialog>
+    <q-dialog v-model="resetPasswordForm">
+      <q-card class="shadow-24">
+        <q-bar class="bg-light-blue-10 text-white rounded-borders" style="height: 50px">
+          <div>{{ $t('staff.reset_password') }}</div>
+          <q-space />
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip content-class="bg-amber text-black shadow-4">{{ $t('index.close') }}</q-tooltip>
+          </q-btn>
+        </q-bar>
+        <q-card-section style="max-height: 325px; width: 400px" class="scroll">
+          <p>{{ $t('staff.reset_password_confirm') }}</p>
+          <p>{{ resetPasswordData.staff_name }}</p>
+          <p v-if="resetPasswordData.email">{{ $t('staff.reset_password_email_sent') }} {{ resetPasswordData.email }}</p>
+          <p v-else>{{ $t('staff.reset_password_no_email') }}</p>
+        </q-card-section>
+        <div style="float: right; padding: 15px 15px 15px 0">
+          <q-btn color="white" text-color="black" style="margin-right: 25px" @click="resetPasswordCancel()" :disable="isResetting">{{ $t('cancel') }}</q-btn>
+          <q-btn color="primary" @click="resetPasswordSubmit()" :loading="isResetting" :disable="isResetting">{{ $t('submit') }}</q-btn>
         </div>
       </q-card>
     </q-dialog>
@@ -235,8 +347,11 @@ export default {
       table_list: [],
       staff_type_list: [],
       columns: [
-        { name: 'staff_name', required: true, label: this.$t('staff.view_staff.staff_name'), align: 'left', field: 'staff_name' },
+        { name: 'staff_name', required: true, label: this.$t('staff.view_staff.login_name'), align: 'left', field: 'staff_name' },
+        { name: 'real_name', label: this.$t('staff.view_staff.real_name'), field: 'real_name', align: 'left' },
         { name: 'staff_type', label: this.$t('staff.view_staff.staff_type'), field: 'staff_type', align: 'center' },
+        { name: 'email', label: this.$t('staff.view_staff.email'), field: 'email', align: 'left' },
+        { name: 'phone_number', label: this.$t('staff.view_staff.phone_number'), field: 'phone_number', align: 'center' },
         { name: 'create_time', label: this.$t('createtime'), field: 'create_time', align: 'center' },
         { name: 'update_time', label: this.$t('updatetime'), field: 'update_time', align: 'center' },
         { name: 'action', label: this.$t('action'), align: 'right' }
@@ -248,8 +363,10 @@ export default {
       newForm: false,
       newFormData: {
         staff_name: '',
+        real_name: '',
         staff_type: '',
-        check_code: ''
+        email: '',
+        phone_number: ''
       },
       editid: 0,
       editFormData: {},
@@ -262,10 +379,64 @@ export default {
       current: 1,
       max: 0,
       total: 0,
-      paginationIpt: 1
+      paginationIpt: 1,
+      resetPasswordForm: false,
+      resetPasswordData: {
+        id: 0,
+        staff_name: '',
+        email: ''
+      },
+      isResetting: false
     }
   },
   methods: {
+    getData (url = 'staff/') {
+      var _this = this
+      getauth(url, {})
+        .then(res => {
+          _this.table_list = res.results
+          _this.total = res.count
+          if (res.count === 0) {
+            _this.max = 0
+          } else {
+            if (Math.ceil(res.count / 30) === 1) {
+              _this.max = 0
+            } else {
+              _this.max = Math.ceil(res.count / 30)
+            }
+          }
+          if (LocalStorage.getItem('lang') === 'zh-hans') {
+            _this.table_list.forEach((item, index) => {
+              if (item.staff_type === 'Admin') {
+                item.staff_type = '管理员'
+              } else if (item.staff_type === 'Customer') {
+                item.staff_type = '客户'
+              } else if (item.staff_type === 'Supplier') {
+                item.staff_type = '供应商'
+              } else if (item.staff_type === 'Manager') {
+                item.staff_type = '经理'
+              } else if (item.staff_type === 'Supervisor') {
+                item.staff_type = '主管'
+              } else if (item.staff_type === 'Inbound') {
+                item.staff_type = '收货组'
+              } else if (item.staff_type === 'Outbound') {
+                item.staff_type = '发货组'
+              } else if (item.staff_type === 'StockControl') {
+                item.staff_type = '库存管理'
+              }
+            })
+          }
+          _this.pathname_previous = res.previous
+          _this.pathname_next = res.next
+        })
+        .catch(err => {
+          _this.$q.notify({
+            message: err.detail,
+            icon: 'close',
+            color: 'negative'
+          })
+        })
+    },
     getList () {
       var _this = this
       getauth(_this.pathname + '?page=' + '' + _this.current, {})
@@ -379,7 +550,7 @@ export default {
             color: 'negative'
           })
         }
-        
+
       })
       .catch(err => {
         _this.$q.notify({
@@ -474,7 +645,10 @@ export default {
       putauth(this.pathname + val.id + '/', {
         is_lock: !val.is_lock,
         staff_name: val.staff_name,
-        staff_type: val.staff_type
+        real_name: val.real_name || '',
+        staff_type: val.staff_type,
+        email: val.email || '',
+        phone_number: val.phone_number || ''
       })
         .then(res => {
           this.getList()
@@ -496,17 +670,7 @@ export default {
           })
         })
     },
-    RandomCheckCode () {
-      var _this = this
-      var code = ''
-      var codeLength = 4
-      var random = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-      for (var i = 0; i < codeLength; i++) {
-        var index = Math.floor(Math.random() * 9)
-        code += random[index]
-      }
-      _this.newFormData.check_code = code
-    },
+
     newDataSubmit () {
       var _this = this
       var staffs = []
@@ -514,8 +678,16 @@ export default {
       _this.table_list.forEach(i => {
         staffs.push(i.staff_name)
       })
-      if (staffs.indexOf(_this.newFormData.staff_name) === -1 && _this.newFormData.staff_name.length !== 0 && _this.newFormData.staff_type) {
-        _this.RandomCheckCode()
+      if (staffs.indexOf(_this.newFormData.staff_name) === -1 && _this.newFormData.staff_name.length !== 0 && _this.newFormData.staff_type && _this.newFormData.email) {
+        // 验证邮箱格式
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(_this.newFormData.email)) {
+          _this.$q.notify({
+            message: _this.$t('staff.view_staff.email_error'),
+            icon: 'close',
+            color: 'negative'
+          })
+          return
+        }
         if (_this.newFormData.staff_type === '经理') {
           _this.newFormData.staff_type = 'Manager'
         } else if (_this.newFormData.staff_type === '主管') {
@@ -542,10 +714,48 @@ export default {
             })
           })
           .catch(err => {
+            // 处理详细的错误信息
+            let errorMessage = '';
+
+            if (err.response && err.response.data) {
+              // 检查是否有详细的字段错误
+              if (err.response.data.email) {
+                // 邮箱错误
+                if (err.response.data.email[0].includes('already in use')) {
+                  errorMessage = _this.$t('staff.view_staff.email_duplicate');
+                } else {
+                  errorMessage = err.response.data.email[0];
+                }
+              } else if (err.response.data.staff_name) {
+                // 用户名错误
+                errorMessage = err.response.data.staff_name[0];
+              } else if (err.response.data.detail) {
+                // 一般错误
+                errorMessage = err.response.data.detail;
+              } else if (typeof err.response.data === 'string') {
+                // 字符串错误
+                errorMessage = err.response.data;
+              } else {
+                // 尝试将整个响应转换为字符串
+                try {
+                  errorMessage = JSON.stringify(err.response.data);
+                } catch (e) {
+                  errorMessage = 'Server Error';
+                }
+              }
+            } else if (err.detail) {
+              // 直接的错误详情
+              errorMessage = err.detail;
+            } else {
+              // 默认错误消息
+              errorMessage = 'Server Error';
+            }
+
             _this.$q.notify({
-              message: err.detail,
+              message: errorMessage,
               icon: 'close',
-              color: 'negative'
+              color: 'negative',
+              timeout: 5000 // 增加显示时间，确保用户能看清
             })
           })
       } else if (staffs.indexOf(_this.newFormData.staff_name) !== -1) {
@@ -566,6 +776,12 @@ export default {
           icon: 'close',
           color: 'negative'
         })
+      } else if (!_this.newFormData.email) {
+        _this.$q.notify({
+          message: _this.$t('staff.view_staff.email_required'),
+          icon: 'close',
+          color: 'negative'
+        })
       }
     },
     newDataCancel () {
@@ -573,20 +789,73 @@ export default {
       _this.newForm = false
       _this.newFormData = {
         staff_name: '',
-        staff_type: ''
+        real_name: '',
+        staff_type: '',
+        email: '',
+        phone_number: ''
       }
     },
     editData (e) {
       var _this = this
       _this.editMode = true
       _this.editid = e.id
+
+      // 确保staff_type_list已初始化
+      if (_this.staff_type_list.length === 0) {
+        if (LocalStorage.getItem('lang') === 'zh-hans') {
+          _this.staff_type_list = ['经理', '主管', '收货组', '发货组', '库存控制', '客户', '供应商']
+        } else {
+          _this.staff_type_list = ['Manager', 'Supervisor', 'Inbound', 'Outbound', 'StockControl', 'Customer', 'Supplier']
+        }
+      }
+
+      // 处理staff_type的中英文转换
+      let displayStaffType = e.staff_type
+      if (LocalStorage.getItem('lang') === 'zh-hans') {
+        if (e.staff_type === 'Manager') displayStaffType = '经理'
+        else if (e.staff_type === 'Supervisor') displayStaffType = '主管'
+        else if (e.staff_type === 'Inbound') displayStaffType = '收货组'
+        else if (e.staff_type === 'Outbound') displayStaffType = '发货组'
+        else if (e.staff_type === 'StockControl') displayStaffType = '库存控制'
+        else if (e.staff_type === 'Customer') displayStaffType = '客户'
+        else if (e.staff_type === 'Supplier') displayStaffType = '供应商'
+      }
+
       _this.editFormData = {
         staff_name: e.staff_name,
-        staff_type: e.staff_type
+        real_name: e.real_name || '',
+        staff_type: displayStaffType,
+        email: e.email || '',
+        phone_number: e.phone_number || ''
       }
+
+      // 打印调试信息
+      console.log('编辑状态:', _this.editFormData)
+      console.log('可选项列表:', _this.staff_type_list)
     },
     editDataSubmit () {
       var _this = this
+
+      // 验证email是否为空
+      if (!_this.editFormData.email) {
+        _this.$q.notify({
+          message: _this.$t('staff.view_staff.email_required'),
+          icon: 'close',
+          color: 'negative'
+        })
+        return
+      }
+
+      // 验证email格式
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(_this.editFormData.email)) {
+        _this.$q.notify({
+          message: _this.$t('staff.view_staff.email_error'),
+          icon: 'close',
+          color: 'negative'
+        })
+        return
+      }
+
       if (_this.editFormData.staff_type === '经理') {
         _this.editFormData.staff_type = 'Manager'
       } else if (_this.editFormData.staff_type === '主管') {
@@ -613,10 +882,45 @@ export default {
           })
         })
         .catch(err => {
+          // 处理详细的错误信息
+          let errorMessage = '';
+
+          if (err.response && err.response.data) {
+            // 检查是否有详细的字段错误
+            if (err.response.data.email) {
+              // 邮箱错误
+              if (err.response.data.email[0].includes('already in use')) {
+                errorMessage = _this.$t('staff.view_staff.email_duplicate');
+              } else {
+                errorMessage = err.response.data.email[0];
+              }
+            } else if (err.response.data.detail) {
+              // 一般错误
+              errorMessage = err.response.data.detail;
+            } else if (typeof err.response.data === 'string') {
+              // 字符串错误
+              errorMessage = err.response.data;
+            } else {
+              // 尝试将整个响应转换为字符串
+              try {
+                errorMessage = JSON.stringify(err.response.data);
+              } catch (e) {
+                errorMessage = 'Server Error';
+              }
+            }
+          } else if (err.detail) {
+            // 直接的错误详情
+            errorMessage = err.detail;
+          } else {
+            // 默认错误消息
+            errorMessage = 'Server Error';
+          }
+
           _this.$q.notify({
-            message: err.detail,
+            message: errorMessage,
             icon: 'close',
-            color: 'negative'
+            color: 'negative',
+            timeout: 5000 // 增加显示时间，确保用户能看清
           })
         })
     },
@@ -626,7 +930,10 @@ export default {
       _this.editid = 0
       _this.editFormData = {
         staff_name: '',
-        staff_type: ''
+        real_name: '',
+        staff_type: '',
+        email: '',
+        phone_number: ''
       }
     },
     deleteData (e) {
@@ -658,6 +965,99 @@ export default {
       var _this = this
       _this.deleteForm = false
       _this.deleteid = 0
+    },
+    resetPassword (e) {
+      var _this = this
+      _this.resetPasswordForm = true
+      _this.resetPasswordData = {
+        id: e.id,
+        staff_name: e.staff_name,
+        email: e.email || ''
+      }
+    },
+    resetPasswordSubmit () {
+      var _this = this
+
+      // 打印调试信息
+      console.log('重置密码数据:', _this.resetPasswordData)
+
+      // 设置按钮加载状态
+      _this.isResetting = true
+
+      // 使用新的URL路径
+      postauth('staff/reset_password/', { id: _this.resetPasswordData.id })
+        .then(res => {
+          console.log('重置密码成功:', res)
+          _this.isResetting = false
+          _this.resetPasswordCancel()
+          _this.$q.notify({
+            message: _this.$t('staff.reset_password_success') || 'Password reset successfully',
+            icon: 'check',
+            color: 'green',
+            timeout: 5000
+          })
+        })
+        .catch(err => {
+          _this.isResetting = false
+          console.error('重置密码错误:', err)
+          console.error('错误响应:', err.response)
+
+          let errorMessage = ''
+          if (err.response && err.response.status === 401) {
+            errorMessage = _this.$t('auth.session_expired') || 'Session expired'
+            // 可能需要重定向到登录页面
+            setTimeout(() => {
+              window.location.href = '/'
+            }, 2000)
+          } else if (err.response && err.response.status === 404) {
+            // 如果是404错误，可能是用户或员工未找到
+            errorMessage = (err.response.data && err.response.data.msg) || _this.$t('staff.reset_password_failed') || 'Failed to reset password'
+            console.log('尝试使用另一个URL路径...')
+            // 尝试使用另一个URL路径
+            postauth('staff/reset-password/', { id: _this.resetPasswordData.id })
+              .then(res => {
+                _this.isResetting = false
+                _this.resetPasswordCancel()
+                _this.$q.notify({
+                  message: _this.$t('staff.reset_password_success') || 'Password reset successfully',
+                  icon: 'check',
+                  color: 'green',
+                  timeout: 5000
+                })
+              })
+              .catch(innerErr => {
+                _this.isResetting = false
+                console.error('第二次尝试也失败:', innerErr)
+                errorMessage = (innerErr.response && innerErr.response.data && innerErr.response.data.msg) || _this.$t('staff.reset_password_failed') || 'Failed to reset password'
+                _this.$q.notify({
+                  message: errorMessage,
+                  icon: 'close',
+                  color: 'negative',
+                  timeout: 5000
+                })
+              })
+            return // 防止显示两次错误通知
+          } else {
+            errorMessage = err.detail || (err.response && err.response.data ? err.response.data.msg : '') || _this.$t('staff.reset_password_failed') || 'Failed to reset password'
+          }
+
+          _this.$q.notify({
+            message: errorMessage,
+            icon: 'close',
+            color: 'negative',
+            timeout: 5000
+          })
+        })
+    },
+    resetPasswordCancel () {
+      var _this = this
+      _this.resetPasswordForm = false
+      _this.isResetting = false
+      _this.resetPasswordData = {
+        id: 0,
+        staff_name: '',
+        email: ''
+      }
     },
     downloadData () {
       var _this = this
@@ -717,11 +1117,11 @@ export default {
     } else {
       _this.getData('staff/?staff_name=' + LocalStorage.getItem('login_name'))
     }
-    
+
     if (LocalStorage.getItem('lang') === 'zh-hans') {
       _this.staff_type_list = ['经理', '主管', '收货组', '发货组', '库存控制', '客户', '供应商']
     } else {
-      _this.staff_type_list = ['Manager', 'Supervisor', 'Inbount', 'Outbound', 'StockControl', 'Customer', 'Supplier']
+      _this.staff_type_list = ['Manager', 'Supervisor', 'Inbound', 'Outbound', 'StockControl', 'Customer', 'Supplier']
     }
   },
   updated () {

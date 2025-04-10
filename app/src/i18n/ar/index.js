@@ -385,7 +385,7 @@ export default {
   },
   staff: {
     staff: 'قائمة موظف',
-    check_code: 'رمز التحقق',
+
     view_staff: {
       staff_name: 'اسم الموظف',
       staff_type: 'نوع موظف',

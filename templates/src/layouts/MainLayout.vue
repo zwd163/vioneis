@@ -660,6 +660,16 @@
             dense
             outlined
             square
+            :label="$t('index.email')"
+            v-model="registerform.email"
+            type="email"
+            @keyup.enter="Register()"
+            style="margin-top: 5px"
+          />
+          <q-input
+            dense
+            outlined
+            square
             :label="$t('index.password')"
             v-model="registerform.password1"
             :type="isPwd ? 'password' : 'text'"
@@ -764,6 +774,7 @@ export default {
       register: false,
       registerform: {
         name: '',
+        email: '',
         password1: '',
         password2: ''
       },
@@ -855,7 +866,7 @@ Login () {
           message: _this.$t('index.login_success'),
           icon: 'check',
           color: 'green',
-          timeout: 2000
+          timeout: 5000  // 增加通知显示时间到5秒
         })
         // Explanation: Call the staffType() method.
         _this.staffType()
@@ -870,7 +881,7 @@ Login () {
           message: res.msg || _this.$t('index.login_failed'),
           icon: 'close',
           color: 'negative',
-          timeout: 2000
+          timeout: 5000  // 增加通知显示时间到5秒
         })
       }
     })
@@ -879,7 +890,7 @@ Login () {
         message: err.detail || _this.$t('index.login_error'),
         icon: 'close',
         color: 'negative',
-        timeout: 2000
+        timeout: 5000  // 增加通知显示时间到5秒
       })
     })
     },
@@ -922,7 +933,8 @@ Login () {
             _this.$q.notify({
               message: _this.$t('index.login_success'),
               icon: 'check',
-              color: 'green'
+              color: 'green',
+              timeout: 5000  // 增加通知显示时间到5秒
             })
             // Explanation: Call the staffType() method.
             _this.staffType()
@@ -1141,13 +1153,15 @@ Login () {
             LocalStorage.set('auth', '1')
             _this.registerform = {
               name: '',
+              email: '',
               password1: '',
               password2: ''
             }
             _this.$q.notify({
               message: res.msg,
               icon: 'check',
-              color: 'green'
+              color: 'green',
+              timeout: 5000  // 增加通知显示时间到5秒
             })
             _this.staffType()
             localStorage.removeItem('menulink')

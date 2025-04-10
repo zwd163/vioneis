@@ -383,7 +383,7 @@ export default {
   },
   staff: {
     staff: 'Staff',
-    check_code: 'Check Code',
+
     view_staff: {
       staff_name: 'Staff Name',
       staff_type: 'Staff Type',
