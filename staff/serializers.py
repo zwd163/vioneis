@@ -20,7 +20,7 @@ class StaffGetSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', ]
 
 class StaffPostSerializer(serializers.ModelSerializer):
-    # openid = serializers.CharField(read_only=False, required=False, validators=[datasolve.openid_validate]) # No longer required for creation
+    openid = serializers.CharField(read_only=False, required=False) # Added back to allow setting openid
     staff_name = serializers.CharField(read_only=False, required=True, validators=[datasolve.data_validate])
     real_name = serializers.CharField(read_only=False, required=False, allow_blank=True) # Added, optional
     staff_type = serializers.CharField(read_only=False, required=True, validators=[datasolve.data_validate])
@@ -31,8 +31,8 @@ class StaffPostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ListModel
-        # Keep check_code and openid excluded if they are not set during creation
-        exclude = ['is_delete',  'openid']
+        # Include openid field so it can be set during creation
+        exclude = ['is_delete']
         read_only_fields = ['id', 'create_time', 'update_time', ]
 
     # create method simplified as password field is removed

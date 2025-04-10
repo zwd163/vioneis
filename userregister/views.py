@@ -55,6 +55,7 @@ def register(request, *args, **kwargs):
     post_data = json.loads(request.body.decode())
     data = {
         "name": post_data.get('name'),
+        "email": post_data.get('email'),  # 添加 email 字段
         "password1": post_data.get('password1'),
         "password2": post_data.get('password2')
     }
@@ -96,20 +97,57 @@ def register(request, *args, **kwargs):
                             err_password_not_same['data'] = data['name']
                             return JsonResponse(err_password_not_same)
                         else:
+                            # 检查是否提供了邮箱
+                            if not data.get('email'):
+                                err_email_empty = FBMsg.err_ret()
+                                err_email_empty['msg'] = 'Email is required'
+                                err_email_empty['ip'] = ip
+                                err_email_empty['data'] = data['name']
+                                return JsonResponse(err_email_empty)
+
+                            # 检查用户名是否已经存在
+                            if staff.objects.filter(staff_name=str(data['name'])).exists():
+                                err_name_exists = FBMsg.err_ret()
+                                err_name_exists['msg'] = 'Username already exists'
+                                err_name_exists['ip'] = ip
+                                err_name_exists['data'] = data['name']
+                                return JsonResponse(err_name_exists)
+
+                            # 检查邮箱是否已经存在
+                            if staff.objects.filter(email=str(data['email'])).exists():
+                                err_email_exists = FBMsg.err_ret()
+                                err_email_exists['msg'] = 'Email already exists'
+                                err_email_exists['ip'] = ip
+                                err_email_exists['data'] = data['name']
+                                return JsonResponse(err_email_exists)
+
                             transaction_code = Md5.md5(data['name'])
-                            user = User.objects.create_user(username=str(data['name']),
-                                                            password=str(data['password1']))
-                            Users.objects.create(user_id=user.id, name=str(data['name']),
-                                                 openid=transaction_code, appid=Md5.md5(data['name'] + '1'),
-                                                 t_code=Md5.md5(str(timezone.now())),
-                                                 developer=1, ip=ip)
-                            auth.login(request, user)
-                            # 生成随机码，但不存储到 staff 表中
-                            check_code = random.randint(1000, 9999)
-                            # 创建 staff 对象，不传入 check_code 参数
-                            staff.objects.create(staff_name=str(data['name']),
-                                                 staff_type='Admin',
-                                                 openid=transaction_code)
+
+                            try:
+                                # 创建 Django User 对象，不再使用 email 字段
+                                user = User.objects.create_user(username=str(data['name']),
+                                                                password=str(data['password1']))
+                                # 创建 Users 对象
+                                Users.objects.create(user_id=user.id, name=str(data['name']),
+                                                     openid=transaction_code, appid=Md5.md5(data['name'] + '1'),
+                                                     t_code=Md5.md5(str(timezone.now())),
+                                                     developer=1, ip=ip)
+                                auth.login(request, user)
+                                # 创建 staff 对象，包含 email 字段
+                                staff.objects.create(staff_name=str(data['name']),
+                                                     staff_type='Admin',
+                                                     email=str(data['email']),  # 添加 email 字段
+                                                     openid=transaction_code)
+                            except Exception as e:
+                                # 如果创建过程中出现任何错误，回滚已创建的对象
+                                if 'user' in locals():
+                                    user.delete()
+                                # 返回错误信息
+                                err_server = FBMsg.err_ret()
+                                err_server['msg'] = f'Server error: {str(e)}'
+                                err_server['ip'] = ip
+                                err_server['data'] = data['name']
+                                return JsonResponse(err_server)
                             # 获取创建的 staff 对象的 ID
                             user_id = staff.objects.filter(openid=transaction_code, staff_name=str(data['name']),
                                                  staff_type='Admin').first().id
@@ -171,14 +209,15 @@ def register(request, *args, **kwargs):
                                                      )
                                 customer_data_list.append(demo_data)
                             customer.objects.bulk_create(customer_data_list, batch_size=100)
-                            staff_data_list = []
-                            for staff_data in randomname:
-                                demo_data = staff(openid=transaction_code,
-                                                  staff_name=staff_data,
-                                                  staff_type=str(randomStaffType())
-                                                  )
-                                staff_data_list.append(demo_data)
-                            staff.objects.bulk_create(staff_data_list, batch_size=100)
+                            # 不再创建随机 staff，避免与现有的 staff_name 冲突
+                            # staff_data_list = []
+                            # for staff_data in randomname:
+                            #     demo_data = staff(openid=transaction_code,
+                            #                       staff_name=staff_data,
+                            #                       staff_type=str(randomStaffType())
+                            #                       )
+                            #     staff_data_list.append(demo_data)
+                            # staff.objects.bulk_create(staff_data_list, batch_size=100)
                             from driver.models import ListModel as driver
                             driver_data_list = []
                             for driver_data in range(1, 42):

@@ -36,12 +36,28 @@ def login(request, *args, **kwargs):
     if user is not None:
         auth.login(request, user)
 
-        # 确保用户有 openid
+        # 获取用户详情
         user_detail, created = Users.objects.get_or_create(user_id=user.id)
+
+        # 检查用户是否是 Admin
+        is_admin = False
+        staff_obj = staff.objects.filter(staff_name__iexact=str(user.username)).first()
+        if staff_obj:
+            is_admin = staff_obj.staff_type == 'Admin'
+
+        # 只有在 Admin 注册时才应该生成新的 openid
+        # 如果不是 Admin 且 openid 为空，应该报错
         if not user_detail.openid or user_detail.openid == '':
-            # 如果 openid 为空，生成新的 openid
-            user_detail.openid = Md5.md5(user.username)
-            user_detail.save()
+            if is_admin:
+                # 如果是 Admin 且 openid 为空，生成新的 openid
+                user_detail.openid = Md5.md5(user.username)
+                user_detail.save()
+            else:
+                # 如果不是 Admin 且 openid 为空，报错
+                err_ret = FBMsg.err_ret()
+                err_ret['msg'] = 'Staff user must be associated with an Admin'
+                err_ret['data'] = data
+                return JsonResponse(err_ret, status=status.HTTP_401_UNAUTHORIZED)
 
         # Case-insensitive staff name search
         staff_obj = staff.objects.filter(staff_name__iexact=str(user.username)).first()
@@ -54,10 +70,18 @@ def login(request, *args, **kwargs):
         else:
             # 如果在 staff 表中找不到用户，创建一个新的 staff 记录
             try:
+                # 获取用户的 email
+                staff_email = None
+                # 尝试从已存在的 staff 记录中获取 email
+                existing_staff = staff.objects.filter(staff_name__iexact=user.username).first()
+                if existing_staff and existing_staff.email:
+                    staff_email = existing_staff.email
+
                 new_staff = staff(
                     staff_name=user.username,
                     staff_type='Admin',  # 设置为 Admin 类型
-                    openid=user_detail.openid
+                    openid=user_detail.openid,
+                    email=staff_email  # 如果有 email，则使用，否则为 None
                 )
                 new_staff.save()
                 staff_id = new_staff.id
@@ -137,14 +161,64 @@ def forgot_password(request, *args, **kwargs):
     """
     Handle forgot password request
     """
-    # Print debug information
-    print("forgot_password function called")
-    print("Request method:", request.method)
-    print("Request path:", request.path)
-    print("Request headers:", request.headers)
+    if request.method != 'POST':
+        return JsonResponse({"code": "405", "msg": "Method not allowed", "data": None}, status=405)
 
-    # Simple test response
-    return JsonResponse({"code": "200", "msg": "Test response", "data": None})
+    try:
+        post_data = json.loads(request.body.decode())
+        username = post_data.get('username')
+        email = post_data.get('email')
+
+        # 验证用户名和邮箱
+        user = User.objects.filter(username__iexact=username).first()
+        if not user:
+            return JsonResponse({
+                "code": "400",
+                "msg": "User name/email not match",
+                "data": None
+            })
+
+        # 从 staff 表中获取邮箱
+        staff_obj = staff.objects.filter(staff_name__iexact=username).first()
+        if not staff_obj or not staff_obj.email or staff_obj.email.lower() != email.lower():
+            return JsonResponse({
+                "code": "400",
+                "msg": "User name/email not match",
+                "data": None
+            })
+
+        # 生成密码重置令牌
+        token_obj = PasswordResetToken.objects.create(
+            user_id=user.id,
+            email=staff_obj.email,
+            expires_at=timezone.now() + timezone.timedelta(hours=24)
+        )
+
+        # 构建密码重置链接
+        reset_link = f"{request.scheme}://{request.get_host()}/reset-password/{token_obj.token}/"
+
+        # 发送密码重置邮件
+        email_sent = send_password_reset_email(staff_obj.email, username, reset_link)
+
+        if email_sent:
+            return JsonResponse({
+                "code": "200",
+                "msg": "Password reset email sent",
+                "data": None
+            })
+        else:
+            return JsonResponse({
+                "code": "500",
+                "msg": "Failed to send email",
+                "data": None
+            })
+    except Exception as e:
+        print(f"Error in forgot_password: {str(e)}")
+        return JsonResponse({
+            "code": "500",
+            "msg": "Server error",
+            "data": None
+        })
 
 def reset_password(request, token):
     """
@@ -223,6 +297,7 @@ def register(request):
             post_data = json.loads(request.body.decode())
             data = {
                 "name": post_data.get('name'),
+                "email": post_data.get('email'),  # 添加 email 字段
                 "password1": post_data.get('password1'),
                 "password2": post_data.get('password2'),
             }
@@ -283,10 +358,19 @@ def register(request):
             # Generate check code (for reference only, not stored in database)
             check_code = random.randint(1000, 9999)
 
-            # Create staff
+            # 检查是否提供了邮箱
+            if not data.get('email'):
+                err_email_empty = FBMsg.err_ret()
+                err_email_empty['msg'] = 'Email is required'
+                err_email_empty['ip'] = ip
+                err_email_empty['data'] = data['name']
+                return JsonResponse(err_email_empty)
+
+            # Create staff with email
             staff_obj = staff.objects.create(
                 staff_name=str(data['name']),
                 staff_type='Admin',
+                email=str(data['email']),  # 添加 email 字段
                 openid=transaction_code
             )
 
